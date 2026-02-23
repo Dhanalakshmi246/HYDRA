@@ -27,11 +27,11 @@ spec:
         prometheus.io/port: "8006"
     spec:
       nodeSelector:
-        node.kubernetes.io/instance-type: g4dn.xlarge
+        eks.amazonaws.com/nodegroup: gpu
       tolerations:
-        - key: nvidia.com/gpu
-          operator: Exists
-          effect: NoSchedule
+        - key: "nvidia.com/gpu"
+          operator: "Exists"
+          effect: "NoSchedule"
       containers:
         - name: causal-engine
           image: argus/causal-engine:3.0

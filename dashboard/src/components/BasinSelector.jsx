@@ -1,11 +1,11 @@
 /**
  * BasinSelector — Multi-basin selection dropdown for the ARGUS dashboard.
- * Allows switching between monitored river basins.
+ * Fetches live basin summaries from the API; falls back to static defaults.
  * Emits the selected basin to parent for filtering predictions.
  */
 import { useState, useRef, useEffect } from 'react'
 
-const BASINS = [
+const BASINS_FALLBACK = [
   {
     id: 'brahmaputra',
     name: 'Brahmaputra Basin',
@@ -35,11 +35,33 @@ const BASINS = [
   },
 ]
 
+const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8000'
+
 export default function BasinSelector({ selectedBasin, onBasinChange, className = '' }) {
   const [open, setOpen] = useState(false)
+  const [basins, setBasins] = useState(BASINS_FALLBACK)
   const ref = useRef(null)
 
-  const current = BASINS.find((b) => b.id === selectedBasin) || BASINS[0]
+  const current = basins.find((b) => b.id === selectedBasin) || basins[0]
+
+  // Fetch live basin summaries from API
+  useEffect(() => {
+    const controller = new AbortController()
+    fetch(`${API_BASE}/api/v1/basins/summaries`, { signal: controller.signal })
+      .then((r) => {
+        if (!r.ok) throw new Error(`HTTP ${r.status}`)
+        return r.json()
+      })
+      .then((data) => {
+        if (Array.isArray(data) && data.length > 0) {
+          setBasins(data)
+        }
+      })
+      .catch(() => {
+        // Keep fallback basins on error
+      })
+    return () => controller.abort()
+  }, [])
 
   // Close on outside click
   useEffect(() => {
@@ -84,7 +106,7 @@ export default function BasinSelector({ selectedBasin, onBasinChange, className 
             </span>
           </div>
           <ul className="py-1">
-            {BASINS.map((basin) => (
+            {basins.map((basin) => (
               <li key={basin.id}>
                 <button
                   onClick={() => {
@@ -129,4 +151,4 @@ export default function BasinSelector({ selectedBasin, onBasinChange, className 
   )
 }
 
-export { BASINS }
+export { BASINS_FALLBACK as BASINS }

@@ -77,15 +77,23 @@ python - << 'PYEOF'
 import torch, torch.nn as nn
 
 class PINNStub(nn.Module):
-    def __init__(self):
+    """Must match SaintVenantPINN in services/feature_engine/pinn_mesh.py"""
+    def __init__(self, hidden=64):
         super().__init__()
-        self.net = nn.Sequential(nn.Linear(10, 64), nn.Tanh(),
-                                  nn.Linear(64, 64), nn.Tanh(),
-                                  nn.Linear(64, 1))
+        self.net = nn.Sequential(
+            nn.Linear(2, hidden),
+            nn.Tanh(),
+            nn.Linear(hidden, hidden),
+            nn.Tanh(),
+            nn.Linear(hidden, hidden),
+            nn.Tanh(),
+            nn.Linear(hidden, 1),
+        )
     def forward(self, x): return self.net(x)
 
 torch.save(PINNStub().state_dict(), 'models/pinn_beas_river.pt')
-print("  ✅ PINN stub saved")
+torch.save(PINNStub().state_dict(), 'models/pinn_brahmaputra.pt')
+print("  ✅ PINN stubs saved (beas_river + brahmaputra)")
 PYEOF
 
 # ── 4. Create Causal GNN stub model ─────────────────────

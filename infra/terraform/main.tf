@@ -261,6 +261,38 @@ resource "aws_security_group" "rds" {
   }
 }
 
+resource "aws_db_parameter_group" "timescale" {
+  name        = "argus-timescaledb-pg15"
+  family      = "postgres15"
+  description = "ARGUS TimescaleDB parameter group"
+
+  parameter {
+    name         = "shared_preload_libraries"
+    value        = "timescaledb,pg_stat_statements"
+    apply_method = "pending-reboot"
+  }
+
+  parameter {
+    name  = "max_connections"
+    value = "200"
+  }
+
+  parameter {
+    name  = "work_mem"
+    value = "16384"
+  }
+
+  parameter {
+    name  = "timescaledb.max_background_workers"
+    value = "8"
+  }
+
+  tags = {
+    Project     = "argus"
+    Environment = var.environment
+  }
+}
+
 resource "aws_db_instance" "argus" {
   identifier = "argus-timescale-${var.environment}"
 
@@ -276,6 +308,8 @@ resource "aws_db_instance" "argus" {
   db_name  = "argus_db"
   username = "argus"
   password = var.db_password
+
+  parameter_group_name = aws_db_parameter_group.timescale.name
 
   multi_az               = var.environment == "production"
   db_subnet_group_name   = aws_db_subnet_group.argus.name

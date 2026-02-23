@@ -19,6 +19,9 @@ const ScarNetPanel = lazy(() => import('./components/ScarNetPanel'))
 const PresentationMode = lazy(() => import('./components/PresentationMode'))
 import DemoController from './components/DemoController'
 
+// Phase 6: ARGUS Copilot (always loaded — lightweight chat UI)
+import ARGUSCopilot from './components/ARGUSCopilot'
+
 import usePredictions from './hooks/usePredictions'
 import useAlertLog from './hooks/useAlertLog'
 
@@ -265,6 +268,9 @@ export default function App() {
         {/* Alert sidebar — always visible */}
         <AlertSidebar alerts={alerts} loading={alertsLoading} />
       </div>
+
+      {/* Phase 6: ARGUS Copilot — floating bottom-right */}
+      <ARGUSCopilot district="Majuli" userRole="DISTRICT_MAGISTRATE" />
     </div>
   )
 }

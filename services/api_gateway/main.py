@@ -47,6 +47,7 @@ SERVICES = {
     "mirror":       "http://localhost:8011",
     "scarnet":      "http://localhost:8012",
     "model_monitor": "http://localhost:8013",
+    "developer_portal": "http://localhost:5175",
 }
 
 # Route prefix → service mapping (for reverse proxy)
@@ -68,6 +69,9 @@ ROUTE_MAP = {
     "/api/v1/mirror":      "mirror",
     "/api/v1/scarnet":     "scarnet",
     "/api/v1/monitor":     "model_monitor",
+    "/api/v1/playground":  "developer_portal",
+    "/api/v1/docs":        "developer_portal",
+    "/api/v1/registry":    "developer_portal",
 }
 
 
@@ -193,6 +197,77 @@ async def get_dashboard_snapshot():
 
     _cache.set("snapshot", snapshot)
     return snapshot
+
+
+# ── Basin Summaries (live data for BasinSelector) ────────────────────────
+
+BASIN_REGISTRY = [
+    {
+        "id": "brahmaputra",
+        "name": "Brahmaputra Basin",
+        "region": "Northeast India",
+        "center": [26.1, 91.7],
+        "zoom": 8,
+        "color": "#38bdf8",
+    },
+    {
+        "id": "beas",
+        "name": "Beas Basin",
+        "region": "Himachal Pradesh",
+        "center": [31.9, 77.1],
+        "zoom": 9,
+        "color": "#34d399",
+    },
+    {
+        "id": "godavari",
+        "name": "Godavari Basin",
+        "region": "Central–South India",
+        "center": [19.0, 79.5],
+        "zoom": 7,
+        "color": "#fbbf24",
+    },
+]
+
+
+@app.get("/api/v1/basins/summaries")
+async def basins_summaries():
+    """Return basin metadata with live station counts and alert status.
+
+    Dashboard BasinSelector fetches this instead of using hardcoded data.
+    Enriches static registry with live station counts from prediction service.
+    """
+    cached = _cache.get("basins_summaries")
+    if cached:
+        return cached
+
+    enriched = []
+    async with httpx.AsyncClient(timeout=3.0) as client:
+        for basin in BASIN_REGISTRY:
+            entry = {**basin, "stations": 0, "active_alerts": 0}
+            try:
+                resp = await client.get(
+                    f"{SERVICES['prediction']}/api/v1/predictions/stations",
+                    params={"basin": basin["id"]},
+                )
+                if resp.status_code == 200:
+                    data = resp.json()
+                    entry["stations"] = len(data) if isinstance(data, list) else data.get("count", 0)
+            except Exception:
+                pass
+            try:
+                resp = await client.get(
+                    f"{SERVICES['alerts']}/api/v1/alerts/active",
+                    params={"basin": basin["id"]},
+                )
+                if resp.status_code == 200:
+                    data = resp.json()
+                    entry["active_alerts"] = len(data) if isinstance(data, list) else data.get("count", 0)
+            except Exception:
+                pass
+            enriched.append(entry)
+
+    _cache.set("basins_summaries", enriched)
+    return enriched
 
 
 # ── Aggregated Health ────────────────────────────────────────────────────

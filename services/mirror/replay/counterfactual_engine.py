@@ -279,7 +279,7 @@ class CounterfactualEngine:
             return None
         result = fn(event)
         self._cache.setdefault(event.event_id, {})[cf_id] = result
-        logger.info("counterfactual_computed", cf_id=cf_id, event=event.event_id,
+        logger.info("counterfactual_computed", cf_id=cf_id, event_id=event.event_id,
                      lives_saved=result.lives_saved_estimate)
         return result
 
@@ -291,7 +291,7 @@ class CounterfactualEngine:
             self._cache.setdefault(event.event_id, {})[cf_id] = result
             results.append(result)
         results.sort(key=lambda r: r.lives_saved_estimate, reverse=True)
-        logger.info("all_counterfactuals_computed", event=event.event_id,
+        logger.info("all_counterfactuals_computed", event_id=event.event_id,
                      count=len(results))
         return results
 

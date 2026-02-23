@@ -65,21 +65,20 @@ class FloodPredictor:
         self._try_load_model()
 
     def _try_load_model(self) -> None:
-        """Attempt to load a persisted XGBoost model."""
+        """Attempt to load a persisted XGBoost model (joblib-serialised sklearn estimator)."""
         try:
-            import xgboost as xgb
+            import joblib
             from pathlib import Path
 
             model_path = Path(settings.XGBOOST_MODEL_PATH)
             if model_path.exists():
-                self.model = xgb.Booster()
-                self.model.load_model(str(model_path))
+                self.model = joblib.load(str(model_path))
                 self.is_loaded = True
                 logger.info("xgboost_model_loaded", path=str(model_path))
             else:
                 logger.warning("xgboost_model_not_found_using_heuristic", path=str(model_path))
         except ImportError:
-            logger.warning("xgboost_not_installed_using_heuristic")
+            logger.warning("joblib_not_installed_using_heuristic")
 
     def _feature_vector_to_array(self, fv: FeatureVector) -> np.ndarray:
         """Flatten a FeatureVector into a 1-D numpy array matching FEATURE_NAMES order."""
@@ -165,10 +164,11 @@ class FloodPredictor:
         now = fv.timestamp
 
         if self.model is not None and self.is_loaded:
-            import xgboost as xgb
             X = self._feature_vector_to_array(fv)
-            dmat = xgb.DMatrix(X, feature_names=self.feature_names)
-            probability = float(self.model.predict(dmat)[0])
+            if hasattr(self.model, "predict_proba"):
+                probability = float(self.model.predict_proba(X)[0, 1])
+            else:
+                probability = float(self.model.predict(X)[0])
         else:
             probability = self._heuristic_predict(fv)
 

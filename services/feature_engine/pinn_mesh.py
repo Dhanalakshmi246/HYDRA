@@ -131,10 +131,19 @@ class PINNMesh:
             return
 
         self._model = SaintVenantPINN()
-        state = torch.load(p, map_location="cpu", weights_only=True)
-        self._model.load_state_dict(state)
-        self._model.eval()
-        logger.info("pinn_checkpoint_loaded", path=path)
+        try:
+            state = torch.load(p, map_location="cpu", weights_only=True)
+            self._model.load_state_dict(state)
+            self._model.eval()
+            logger.info("pinn_checkpoint_loaded", path=path)
+        except RuntimeError as exc:
+            logger.error(
+                "pinn_checkpoint_load_failed",
+                path=path,
+                error=str(exc),
+                hint="Architecture mismatch — falling back to NumPy IDW mode",
+            )
+            self._model = None
 
     # ── inference ──────────────────────────────────────────────────────
 

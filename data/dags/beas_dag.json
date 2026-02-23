@@ -1,0 +1,61 @@
+{
+  "basin_id": "beas_himachal",
+  "nodes": [
+    {
+      "unit": "mm/hr",
+      "node_id": "rainfall_upstream",
+      "variable": "rainfall_upstream",
+      "node_type": "OBSERVABLE"
+    },
+    {
+      "unit": "mm/hr",
+      "node_id": "snowmelt_rate",
+      "variable": "snowmelt_rate",
+      "node_type": "OBSERVABLE"
+    },
+    {
+      "unit": "m",
+      "node_id": "beas_level_manali",
+      "variable": "beas_level_manali",
+      "node_type": "OBSERVABLE"
+    },
+    {
+      "unit": "fraction_open",
+      "node_id": "pandoh_dam_gate",
+      "variable": "pandoh_dam_gate",
+      "node_type": "INTERVENTION"
+    },
+    {
+      "unit": "m",
+      "node_id": "downstream_depth",
+      "variable": "downstream_depth",
+      "node_type": "OUTCOME"
+    }
+  ],
+  "edges": [
+    {
+      "lag_minutes": 30,
+      "source": "rainfall_upstream",
+      "target": "beas_level_manali",
+      "weight": 0.8
+    },
+    {
+      "lag_minutes": 60,
+      "source": "snowmelt_rate",
+      "target": "beas_level_manali",
+      "weight": 0.8
+    },
+    {
+      "lag_minutes": 90,
+      "source": "pandoh_dam_gate",
+      "target": "downstream_depth",
+      "weight": 0.8
+    },
+    {
+      "lag_minutes": 45,
+      "source": "beas_level_manali",
+      "target": "downstream_depth",
+      "weight": 0.8
+    }
+  ]
+}

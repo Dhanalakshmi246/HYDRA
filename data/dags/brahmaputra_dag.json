@@ -1,20 +1,85 @@
 {
   "basin_id": "brahmaputra_upper",
   "nodes": [
-    {"id": "rainfall_upstream",              "type": "OBSERVABLE", "unit": "mm/hr"},
-    {"id": "soil_saturation_upstream",       "type": "OBSERVABLE", "unit": "fraction"},
-    {"id": "surface_runoff",                 "type": "LATENT",     "unit": "m3/s"},
-    {"id": "tributary_beki_level",           "type": "OBSERVABLE", "unit": "m"},
-    {"id": "brahmaputra_level_dibrugarh",    "type": "OBSERVABLE", "unit": "m"},
-    {"id": "dam_pandoh_gate",                "type": "INTERVENTION","unit": "fraction_open"},
-    {"id": "downstream_flood_depth",         "type": "OUTCOME",    "unit": "m"}
+    {
+      "unit": "mm/hr",
+      "node_id": "rainfall_upstream",
+      "variable": "rainfall_upstream",
+      "node_type": "OBSERVABLE"
+    },
+    {
+      "unit": "fraction",
+      "node_id": "soil_saturation_upstream",
+      "variable": "soil_saturation_upstream",
+      "node_type": "OBSERVABLE"
+    },
+    {
+      "unit": "m3/s",
+      "node_id": "surface_runoff",
+      "variable": "surface_runoff",
+      "node_type": "LATENT"
+    },
+    {
+      "unit": "m",
+      "node_id": "tributary_beki_level",
+      "variable": "tributary_beki_level",
+      "node_type": "OBSERVABLE"
+    },
+    {
+      "unit": "m",
+      "node_id": "brahmaputra_level_dibrugarh",
+      "variable": "brahmaputra_level_dibrugarh",
+      "node_type": "OBSERVABLE"
+    },
+    {
+      "unit": "fraction_open",
+      "node_id": "dam_pandoh_gate",
+      "variable": "dam_pandoh_gate",
+      "node_type": "INTERVENTION"
+    },
+    {
+      "unit": "m",
+      "node_id": "downstream_flood_depth",
+      "variable": "downstream_flood_depth",
+      "node_type": "OUTCOME"
+    }
   ],
   "edges": [
-    {"from": "rainfall_upstream",           "to": "soil_saturation_upstream",    "lag_minutes": 0},
-    {"from": "soil_saturation_upstream",    "to": "surface_runoff",              "lag_minutes": 15},
-    {"from": "surface_runoff",              "to": "tributary_beki_level",        "lag_minutes": 30},
-    {"from": "tributary_beki_level",        "to": "brahmaputra_level_dibrugarh","lag_minutes": 45},
-    {"from": "dam_pandoh_gate",             "to": "brahmaputra_level_dibrugarh","lag_minutes": 60},
-    {"from": "brahmaputra_level_dibrugarh", "to": "downstream_flood_depth",     "lag_minutes": 20}
+    {
+      "lag_minutes": 0,
+      "source": "rainfall_upstream",
+      "target": "soil_saturation_upstream",
+      "weight": 0.8
+    },
+    {
+      "lag_minutes": 15,
+      "source": "soil_saturation_upstream",
+      "target": "surface_runoff",
+      "weight": 0.8
+    },
+    {
+      "lag_minutes": 30,
+      "source": "surface_runoff",
+      "target": "tributary_beki_level",
+      "weight": 0.8
+    },
+    {
+      "lag_minutes": 45,
+      "source": "tributary_beki_level",
+      "target": "brahmaputra_level_dibrugarh",
+      "weight": 0.8
+    },
+    {
+      "lag_minutes": 60,
+      "source": "dam_pandoh_gate",
+      "target": "brahmaputra_level_dibrugarh",
+      "weight": 0.8
+    },
+    {
+      "lag_minutes": 20,
+      "source": "brahmaputra_level_dibrugarh",
+      "target": "downstream_flood_depth",
+      "weight": 0.8
+    }
   ]
 }

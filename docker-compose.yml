@@ -399,14 +399,26 @@ services:
     container_name: argus_mlflow
     ports:
       - "5000:5000"
+    environment:
+      - MLFLOW_TRACKING_URI=postgresql://argus:argus_secure_2024@timescaledb:5432/mlflow
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID:-}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY:-}
     command: >
       mlflow server
       --host 0.0.0.0
       --port 5000
-      --backend-store-uri sqlite:///mlflow.db
+      --backend-store-uri postgresql://argus:argus_secure_2024@timescaledb:5432/mlflow
       --default-artifact-root /mlflow/artifacts
     volumes:
       - mlflow_data:/mlflow
+    depends_on:
+      timescaledb:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
   # ── Hardhat Local Blockchain ─────────────────────────────
   hardhat:
