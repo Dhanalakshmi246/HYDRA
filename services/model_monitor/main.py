@@ -1,4 +1,4 @@
-"""ARGUS Phase 3 — Model Monitor service (port 8014).
+"""ARGUS Phase 3 — Model Monitor service (port 8013).
 
 Tracks prediction-model health with:
  • Evidently-based data-drift detection (PSI, KS, Wasserstein)
@@ -26,7 +26,7 @@ from pydantic import BaseModel, Field
 log = structlog.get_logger(__name__)
 
 DEMO_MODE = os.getenv("DEMO_MODE", "true").lower() in ("true", "1", "yes")
-PORT = int(os.getenv("MODEL_MONITOR_PORT", "8014"))
+PORT = int(os.getenv("MODEL_MONITOR_PORT", "8013"))
 
 
 # ── Pydantic schemas ────────────────────────────────────────────────────

@@ -16,14 +16,14 @@
 - [Prediction Service (8004)](#prediction-service-8004)
 - [Alert Dispatcher (8005)](#alert-dispatcher-8005)
 - [ACN Node (8006)](#acn-node-8006)
-- [Causal Engine (8007)](#causal-engine-8007)
+- [Causal Engine (8006)](#causal-engine-8006)
 - [CHORUS (8008)](#chorus-8008)
 - [Federated Learning (8009)](#federated-learning-8009)
-- [FloodLedger (8010)](#floodledger-8010)
-- [Evacuation RL (8011)](#evacuation-rl-8011)
-- [MIRROR (8012)](#mirror-8012)
-- [ScarNet (8013)](#scarnet-8013)
-- [Model Monitor (8014)](#model-monitor-8014)
+- [FloodLedger (8007)](#floodledger-8007)
+- [Evacuation RL (8010)](#evacuation-rl-8010)
+- [MIRROR (8011)](#mirror-8011)
+- [ScarNet (8012)](#scarnet-8012)
+- [Model Monitor (8013)](#model-monitor-8013)
 
 ---
 
@@ -279,7 +279,7 @@ Current mesh network topology and node health.
 
 ---
 
-## Causal Engine (8007)
+## Causal Engine (8006)
 
 GNN-based causal inference engine with do-calculus intervention support.
 
@@ -408,7 +408,7 @@ Per-round training metrics history.
 
 ---
 
-## FloodLedger (8010)
+## FloodLedger (8007)
 
 Blockchain-based parametric flood insurance with smart contracts.
 
@@ -449,7 +449,7 @@ Trigger a demo parametric insurance payout. Query param: `village_id`.
 
 ---
 
-## Evacuation RL (8011)
+## Evacuation RL (8010)
 
 Reinforcement learning-based evacuation planning and route optimization.
 
@@ -495,7 +495,7 @@ Generate demo evacuation scenario.
 
 ---
 
-## MIRROR (8012)
+## MIRROR (8011)
 
 Counterfactual replay engine — "what if we had acted differently?"
 
@@ -547,7 +547,7 @@ Full counterfactual analysis report.
 
 ---
 
-## ScarNet (8013)
+## ScarNet (8012)
 
 Satellite terrain change detection using Sentinel-2 imagery.
 
@@ -595,7 +595,7 @@ Risk score change due to terrain changes.
 
 ---
 
-## Model Monitor (8014)
+## Model Monitor (8013)
 
 ML model health monitoring — drift detection, accuracy tracking, auto-retrain.
 

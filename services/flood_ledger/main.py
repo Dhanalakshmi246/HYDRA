@@ -39,7 +39,7 @@ from services.flood_ledger.api.routes import router as oracle_router, init_route
 logger = structlog.get_logger(__name__)
 settings = get_settings()
 
-FLOOD_LEDGER_PORT = int(os.getenv("FLOOD_LEDGER_PORT", "8010"))
+FLOOD_LEDGER_PORT = int(os.getenv("FLOOD_LEDGER_PORT", "8007"))
 HARDHAT_RPC_URL = os.getenv("HARDHAT_RPC_URL", "http://localhost:8545")
 CONTRACT_ADDRESS = os.getenv("CONTRACT_ADDRESS", "")
 ASSET_REGISTRY_PATH = os.getenv("ASSET_REGISTRY_PATH", "./data/insured_assets.csv")

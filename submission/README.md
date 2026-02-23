@@ -49,9 +49,9 @@ ARGUS is an **AI-powered flash flood early warning system** that requires **zero
 
 | Layer | Services | Ports |
 |-------|----------|-------|
-| **Data** | Ingestion, CV Gauging, CHORUS, ScarNet | 8001, 8002, 8008, 8013 |
-| **AI** | Feature Engine, Prediction, Causal Engine, Model Monitor, Federated | 8003, 8004, 8007, 8014, 8009 |
-| **Decision** | Evacuation RL, MIRROR, FloodLedger | 8011, 8012, 8010 |
+| **Data** | Ingestion, CV Gauging, CHORUS, ScarNet | 8001, 8002, 8008, 8012 |
+| **AI** | Feature Engine, Prediction, Causal Engine, Model Monitor, Federated | 8003, 8004, 8006, 8013, 8009 |
+| **Decision** | Evacuation RL, MIRROR, FloodLedger | 8010, 8011, 8007 |
 | **Alert** | Alert Dispatcher, ACN Edge Mesh, API Gateway | 8005, 8006, 8000 |
 
 ### Five Core Innovations
@@ -119,24 +119,24 @@ curl http://localhost:8002/api/v1/virtual-gauge/demo
 curl http://localhost:8004/api/v1/predict/brahmaputra_upper
 
 # Causal Intervention
-curl -X POST http://localhost:8007/api/v1/causal/intervene \
+curl -X POST http://localhost:8006/api/v1/causal/intervene \
   -H "Content-Type: application/json" \
   -d '{"basin_id":"brahmaputra_upper","intervention":{"variable":"dam_pandoh_gate","value":0.25}}'
 
 # Evacuation Plan
-curl http://localhost:8011/api/v1/evacuation/plan/majuli_2024
+curl http://localhost:8010/api/v1/evacuation/plan/majuli_2024
 
 # FloodLedger
-curl http://localhost:8010/api/v1/ledger/chain/summary
+curl http://localhost:8007/api/v1/ledger/chain/summary
 
 # MIRROR Counterfactual
-curl http://localhost:8012/api/v1/mirror/event/himachal_2023/counterfactuals
+curl http://localhost:8011/api/v1/mirror/event/himachal_2023/counterfactuals
 
 # ScarNet Terrain
-curl http://localhost:8013/api/v1/scarnet/latest
+curl http://localhost:8012/api/v1/scarnet/latest
 
 # Model Monitor
-curl http://localhost:8014/api/v1/monitor/drift-report
+curl http://localhost:8013/api/v1/monitor/drift-report
 ```
 
 ---

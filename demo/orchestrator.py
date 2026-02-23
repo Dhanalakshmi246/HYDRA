@@ -56,14 +56,14 @@ DEFAULT_ENDPOINTS = {
     "prediction": "http://localhost:8004",
     "alert_dispatcher": "http://localhost:8005",
     "acn_node": "http://localhost:8006",
-    "causal_engine": "http://localhost:8007",
+    "causal_engine": "http://localhost:8006",
     "chorus": "http://localhost:8008",
     "federated": "http://localhost:8009",
-    "flood_ledger": "http://localhost:8010",
-    "evacuation_rl": "http://localhost:8011",
-    "mirror": "http://localhost:8012",
-    "scarnet": "http://localhost:8013",
-    "model_monitor": "http://localhost:8014",
+    "flood_ledger": "http://localhost:8007",
+    "evacuation_rl": "http://localhost:8010",
+    "mirror": "http://localhost:8011",
+    "scarnet": "http://localhost:8012",
+    "model_monitor": "http://localhost:8013",
 }
 
 

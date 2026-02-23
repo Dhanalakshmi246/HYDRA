@@ -1,0 +1,15 @@
+{
+  "name": "argus-flood-ledger",
+  "version": "1.0.0",
+  "description": "ARGUS FloodLedger — blockchain-anchored parametric insurance oracle",
+  "scripts": {
+    "compile": "npx hardhat compile",
+    "deploy": "npx hardhat run scripts/deploy.js --network localhost",
+    "node": "npx hardhat node",
+    "test": "npx hardhat test"
+  },
+  "devDependencies": {
+    "hardhat": "^2.19.0",
+    "@nomicfoundation/hardhat-toolbox": "^4.0.0"
+  }
+}

@@ -1,4 +1,4 @@
-"""MIRROR — Counterfactual Replay Engine (port 8012).
+"""MIRROR — Counterfactual Replay Engine (port 8011).
 
 Phase 2 rewrite: historical flood event replay with 4 standard
 counterfactuals, intervention slider, PDF report generation.

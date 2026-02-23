@@ -15,6 +15,7 @@ services:
 
   kafka:
     image: confluentinc/cp-kafka:7.6.0
+    container_name: argus_kafka
     depends_on:
       - zookeeper
     ports:
@@ -60,12 +61,13 @@ services:
   # ── TimescaleDB (PostgreSQL + TimescaleDB extension) ───
   timescaledb:
     image: timescale/timescaledb:latest-pg16
+    container_name: argus_timescaledb
     ports:
       - "5432:5432"
     environment:
       POSTGRES_USER: argus
       POSTGRES_PASSWORD: argus
-      POSTGRES_DB: argus
+      POSTGRES_DB: argus_db
     volumes:
       - timescale_data:/var/lib/postgresql/data
 
@@ -90,6 +92,7 @@ services:
   # ── Redis (prediction cache) ────────────────────────────
   redis:
     image: redis:7-alpine
+    container_name: argus_redis
     ports:
       - "6379:6379"
 
@@ -133,23 +136,6 @@ services:
       - kafka
       - prediction
 
-  # ── Dhana — ACN Node ───────────────────────────────────
-  acn_node:
-    build:
-      context: .
-      dockerfile: services/acn_node/Dockerfile
-    ports:
-      - "8016:8016"
-    env_file: .env
-    environment:
-      KAFKA_BOOTSTRAP_SERVERS: kafka:29092
-      SERVICE_HOST: "0.0.0.0"
-    volumes:
-      - ./data:/app/data
-      - ./models:/app/models
-    depends_on:
-      - kafka
-
   # ── Rogesh — Causal Engine (Phase 2) ───────────────────
   causal_engine:
     build:
@@ -182,6 +168,7 @@ services:
     env_file: .env
     environment:
       FLOOD_LEDGER_PORT: "8007"
+      DEMO_MODE: "true"
       HARDHAT_RPC_URL: http://localhost:8545
       ASSET_REGISTRY_PATH: ./data/insured_assets.csv
       SERVICE_HOST: "0.0.0.0"
@@ -196,10 +183,10 @@ services:
       context: .
       dockerfile: services/model_monitor/Dockerfile
     ports:
-      - "8014:8014"
+      - "8013:8013"
     env_file: .env
     environment:
-      MODEL_MONITOR_PORT: "8014"
+      MODEL_MONITOR_PORT: "8013"
       DEMO_MODE: "true"
       SERVICE_HOST: "0.0.0.0"
     volumes:
@@ -270,11 +257,11 @@ services:
       context: .
       dockerfile: services/mirror/Dockerfile
     ports:
-      - "8012:8012"
+      - "8011:8011"
     env_file: .env
     environment:
       SERVICE_HOST: "0.0.0.0"
-      MIRROR_PORT: "8012"
+      MIRROR_PORT: "8011"
     volumes:
       - ./data:/app/data
     depends_on:
@@ -286,11 +273,11 @@ services:
       context: .
       dockerfile: services/scarnet/Dockerfile
     ports:
-      - "8013:8013"
+      - "8012:8012"
     env_file: .env
     environment:
       SERVICE_HOST: "0.0.0.0"
-      SCARNET_PORT: "8013"
+      SCARNET_PORT: "8012"
       SCARNET_DEMO_MODE: "true"
     volumes:
       - ./data:/app/data
@@ -339,6 +326,17 @@ services:
       - mirror
       - scarnet
       - api_gateway
+
+  # ── Hardhat Local Blockchain ─────────────────────────────
+  hardhat:
+    image: node:18-slim
+    container_name: argus_hardhat
+    working_dir: /app
+    command: npx hardhat node --hostname 0.0.0.0
+    ports:
+      - "8545:8545"
+    volumes:
+      - ./services/flood_ledger:/app
 
 volumes:
   timescale_data:

@@ -73,14 +73,14 @@ class Settings:
     CAUSAL_DAG_PATH: str = os.getenv("CAUSAL_DAG_PATH", "./shared/causal_dag/beas_brahmaputra_v1.json")
     CAUSAL_GNN_HIDDEN: int = int(os.getenv("CAUSAL_GNN_HIDDEN", "64"))
     CAUSAL_GNN_LAYERS: int = int(os.getenv("CAUSAL_GNN_LAYERS", "3"))
-    CAUSAL_ENGINE_PORT: int = int(os.getenv("CAUSAL_ENGINE_PORT", "8007"))
+    CAUSAL_ENGINE_PORT: int = int(os.getenv("CAUSAL_ENGINE_PORT", "8006"))
     CAUSAL_DAG_CONFIG_PATH: str = os.getenv("CAUSAL_DAG_CONFIG_PATH", "./data/dags/brahmaputra_dag.json")
     CAUSAL_GNN_MODEL_PATH: str = os.getenv("CAUSAL_GNN_MODEL_PATH", "./models/causal_gnn_brahmaputra.pt")
     N_MONTE_CARLO: int = int(os.getenv("N_MONTE_CARLO", "100"))
 
     # ── FloodLedger ──────────────────────────────────────────
     LEDGER_DB_PATH: str = os.getenv("LEDGER_DB_PATH", "./data/flood_ledger.db")
-    LEDGER_PORT: int = int(os.getenv("FLOOD_LEDGER_PORT", "8010"))
+    LEDGER_PORT: int = int(os.getenv("FLOOD_LEDGER_PORT", "8007"))
     LEDGER_DIFFICULTY: int = int(os.getenv("LEDGER_DIFFICULTY", "2"))  # PoW leading zeros
     HARDHAT_RPC_URL: str = os.getenv("HARDHAT_RPC_URL", "http://localhost:8545")
     ASSET_REGISTRY_PATH: str = os.getenv("ASSET_REGISTRY_PATH", "./data/insured_assets.csv")
@@ -121,13 +121,13 @@ class Settings:
     EVAC_RETRAIN_INTERVAL_S: int = int(os.getenv("EVAC_RETRAIN_INTERVAL_S", "3600"))
 
     # ── MIRROR ───────────────────────────────────────────────
-    MIRROR_PORT: int = int(os.getenv("MIRROR_PORT", "8012"))
+    MIRROR_PORT: int = int(os.getenv("MIRROR_PORT", "8011"))
     MIRROR_MAX_STEPS: int = int(os.getenv("MIRROR_MAX_STEPS", "48"))  # max replay steps
 
     # ═══════════════════════  PHASE 3  ════════════════════════
 
     # ── Model Monitor ────────────────────────────────────────
-    MODEL_MONITOR_PORT: int = int(os.getenv("MODEL_MONITOR_PORT", "8014"))
+    MODEL_MONITOR_PORT: int = int(os.getenv("MODEL_MONITOR_PORT", "8013"))
     DRIFT_CHECK_INTERVAL_S: int = int(os.getenv("DRIFT_CHECK_INTERVAL_S", "3600"))
     DRIFT_RETRAIN_THRESHOLD: float = float(os.getenv("DRIFT_RETRAIN_THRESHOLD", "0.3"))
 
@@ -146,7 +146,7 @@ class Settings:
     # ═══════════════════════  PHASE 3  ════════════════════════
 
     # ── ScarNet — Satellite Terrain Monitor ──────────────────
-    SCARNET_PORT: int = int(os.getenv("SCARNET_PORT", "8013"))
+    SCARNET_PORT: int = int(os.getenv("SCARNET_PORT", "8012"))
     SCARNET_DEMO_MODE: bool = os.getenv("SCARNET_DEMO_MODE", "true").lower() in ("true", "1", "yes")
     COPERNICUS_CLIENT_ID: str = os.getenv("COPERNICUS_CLIENT_ID", "")
     COPERNICUS_CLIENT_SECRET: str = os.getenv("COPERNICUS_CLIENT_SECRET", "")

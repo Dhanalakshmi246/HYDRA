@@ -1,4 +1,4 @@
-"""ScarNet — Satellite Terrain Change Detection Service (port 8013).
+"""ScarNet — Satellite Terrain Change Detection Service (port 8012).
 
 Detects terrain changes from Sentinel-2 imagery that affect flood risk:
 deforestation, urbanization, slope failures, river channel shifts.
@@ -6,7 +6,7 @@ deforestation, urbanization, slope failures, river channel shifts.
 Automatically updates PINN physics model when significant change detected.
 Generates a "terrain health score" for authorities.
 
-Run: uvicorn services.scarnet.main:app --reload --port 8013
+Run: uvicorn services.scarnet.main:app --reload --port 8012
 """
 
 from __future__ import annotations
@@ -29,7 +29,7 @@ from services.scarnet.api.routes import router as scarnet_router, init_routes
 logger = structlog.get_logger(__name__)
 
 # ── Configuration ────────────────────────────────────────────────────────
-SCARNET_PORT = int(os.getenv("SCARNET_PORT", "8013"))
+SCARNET_PORT = int(os.getenv("SCARNET_PORT", "8012"))
 DEMO_MODE = os.getenv("SCARNET_DEMO_MODE", "true").lower() in ("true", "1", "yes")
 UNET_CHECKPOINT = os.getenv("UNET_CHECKPOINT", "./models/unet_change_detect.pt")
 COPERNICUS_CLIENT_ID = os.getenv("COPERNICUS_CLIENT_ID", "")

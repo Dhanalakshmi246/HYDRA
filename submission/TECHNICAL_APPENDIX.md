@@ -17,14 +17,14 @@ ARGUS (Adaptive Real-time Guardian & Unified Sentinel) is a distributed microser
 | 8004 | Prediction | 1 | XGBoost + TFT multi-horizon flood forecasting |
 | 8005 | Alert Dispatcher | 1 | Multi-channel alert routing (SMS, siren, cell broadcast) |
 | 8006 | ACN Node | 2 | Autonomous Crisis Node — offline edge AI mesh |
-| 8007 | Causal Engine | 2 | GNN do-calculus intervention engine |
+| 8006 | Causal Engine | 2 | GNN do-calculus intervention engine |
 | 8008 | CHORUS | 2 | Community Human-Observations for Risk Understanding |
 | 8009 | Federated Server | 2 | Federated learning with differential privacy |
-| 8010 | FloodLedger | 2 | Blockchain parametric insurance oracle |
-| 8011 | Evacuation RL | 2 | PPO reinforcement learning route optimization |
-| 8012 | MIRROR | 2 | Counterfactual replay engine |
-| 8013 | ScarNet | 3 | Satellite terrain change detection (Sentinel-2) |
-| 8014 | Model Monitor | 3 | Drift detection + automatic retraining |
+| 8007 | FloodLedger | 2 | Blockchain parametric insurance oracle |
+| 8010 | Evacuation RL | 2 | PPO reinforcement learning route optimization |
+| 8011 | MIRROR | 2 | Counterfactual replay engine |
+| 8012 | ScarNet | 3 | Satellite terrain change detection (Sentinel-2) |
+| 8013 | Model Monitor | 3 | Drift detection + automatic retraining |
 | 8000 | API Gateway | 3 | Unified reverse proxy with cached aggregation |
 
 ### 1.2 Data Flow Architecture
@@ -47,7 +47,7 @@ Sensors / CCTV / Satellite / Community Reports
               │                │                │
         ┌─────▼──────┐  ┌─────▼──────┐  ┌──────▼──────┐
         │   Causal    │  │   Alert    │  │  Evacuation │
-        │   (8007)    │  │  (8005)    │  │   (8011)    │
+        │   (8006)    │  │  (8005)    │  │   (8010)    │
         └────────────┘  └────────────┘  └─────────────┘
 ```
 

@@ -1,4 +1,4 @@
-"""Evacuation RL Engine — FastAPI service (port 8011).
+"""Evacuation RL Engine — FastAPI service (port 8010).
 
 Multi-agent RL evacuation choreography engine.
 Turns flood warnings into actionable rescue plans.
@@ -7,7 +7,7 @@ Dual mode:
   - PRETRAINED: PPO agent from checkpoint
   - RULE_BASED: priority-based heuristic (default, always works)
 
-Run: uvicorn services.evacuation_rl.main:app --reload --port 8011
+Run: uvicorn services.evacuation_rl.main:app --reload --port 8010
 """
 
 from __future__ import annotations

@@ -42,7 +42,7 @@ SERVICE_REGISTRY = {
     "federated": {"port": 8009, "critical": False},
     "evacuation_rl": {"port": 8010, "critical": False},
     "mirror": {"port": 8011, "critical": False},
-    "acn_node": {"port": 8012, "critical": False},
+    "scarnet": {"port": 8012, "critical": False},
     "model_monitor": {"port": 8013, "critical": False},
 }
 
