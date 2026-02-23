@@ -1,61 +1,74 @@
 {
+  "dag_id": "beas_v2",
   "basin_id": "beas_himachal",
+  "version": "2.0.0",
   "nodes": [
     {
-      "unit": "mm/hr",
       "node_id": "rainfall_upstream",
       "variable": "rainfall_upstream",
-      "node_type": "OBSERVABLE"
+      "node_type": "OBSERVABLE",
+      "unit": "mm/hr",
+      "default_value": 0.0
     },
     {
-      "unit": "mm/hr",
       "node_id": "snowmelt_rate",
       "variable": "snowmelt_rate",
-      "node_type": "OBSERVABLE"
+      "node_type": "OBSERVABLE",
+      "unit": "mm/hr",
+      "default_value": 0.0
     },
     {
-      "unit": "m",
       "node_id": "beas_level_manali",
       "variable": "beas_level_manali",
-      "node_type": "OBSERVABLE"
+      "node_type": "OBSERVABLE",
+      "unit": "m",
+      "default_value": 2.0
     },
     {
-      "unit": "fraction_open",
       "node_id": "pandoh_dam_gate",
       "variable": "pandoh_dam_gate",
-      "node_type": "INTERVENTION"
+      "node_type": "INTERVENTION",
+      "unit": "fraction_open",
+      "default_value": 0.5,
+      "min_value": 0.0,
+      "max_value": 1.0
     },
     {
-      "unit": "m",
       "node_id": "downstream_depth",
       "variable": "downstream_depth",
-      "node_type": "OUTCOME"
+      "node_type": "OUTCOME",
+      "unit": "m",
+      "default_value": 0.0
     }
   ],
   "edges": [
     {
-      "lag_minutes": 30,
       "source": "rainfall_upstream",
       "target": "beas_level_manali",
-      "weight": 0.8
+      "weight": 0.8,
+      "lag_minutes": 30,
+      "mechanism": "meteorological"
     },
     {
-      "lag_minutes": 60,
       "source": "snowmelt_rate",
       "target": "beas_level_manali",
-      "weight": 0.8
+      "weight": 0.6,
+      "lag_minutes": 60,
+      "mechanism": "hydrological"
     },
     {
-      "lag_minutes": 90,
       "source": "pandoh_dam_gate",
       "target": "downstream_depth",
-      "weight": 0.8
+      "weight": 0.7,
+      "lag_minutes": 90,
+      "mechanism": "anthropogenic"
     },
     {
-      "lag_minutes": 45,
       "source": "beas_level_manali",
       "target": "downstream_depth",
-      "weight": 0.8
+      "weight": 0.85,
+      "lag_minutes": 45,
+      "mechanism": "hydrological"
     }
   ]
 }

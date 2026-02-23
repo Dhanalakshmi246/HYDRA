@@ -19,6 +19,13 @@ const ScarNetPanel = lazy(() => import('./components/ScarNetPanel'))
 const PresentationMode = lazy(() => import('./components/PresentationMode'))
 import DemoController from './components/DemoController'
 
+// Phase 7 components (lazy-loaded — gap-closure panels)
+const GaugeHeroPanel = lazy(() => import('./components/GaugeHeroPanel'))
+const NDMACompliancePanel = lazy(() => import('./components/NDMACompliancePanel'))
+const DroneMapPanel = lazy(() => import('./components/DroneMapPanel'))
+const LiveValidationPanel = lazy(() => import('./components/LiveValidationPanel'))
+const DisplacementMap = lazy(() => import('./components/DisplacementMap'))
+
 // Phase 6: ARGUS Copilot (always loaded — lightweight chat UI)
 import ARGUSCopilot from './components/ARGUSCopilot'
 
@@ -46,13 +53,18 @@ import './styles/presentation.css'
  */
 
 const TABS = [
-  { id: 'risk_map',     label: 'Risk Map',     icon: '🗺️',  shortcut: '1' },
-  { id: 'evacuation',   label: 'Evacuation',   icon: '🚌',  shortcut: '2' },
-  { id: 'mirror',       label: 'MIRROR',       icon: '🔮',  shortcut: '3' },
-  { id: 'flood_ledger', label: 'FloodLedger',  icon: '🔗',  shortcut: '4' },
-  { id: 'chorus',       label: 'CHORUS',       icon: '📢',  shortcut: '5' },
-  { id: 'scarnet',      label: 'ScarNet',      icon: '🛰️',  shortcut: '6' },
-  { id: 'controller',   label: 'Controller',   icon: '🎬',  shortcut: '7' },
+  { id: 'gauges',        label: 'Gauges',       icon: '📊',  shortcut: '1' },
+  { id: 'risk_map',      label: 'Risk Map',     icon: '🗺️',  shortcut: '2' },
+  { id: 'ndma',          label: 'NDMA',         icon: '🇮🇳',  shortcut: '3' },
+  { id: 'drones',        label: 'Drones',       icon: '🚁',  shortcut: '4' },
+  { id: 'evacuation',    label: 'Evacuation',   icon: '🚌',  shortcut: '5' },
+  { id: 'displacement',  label: 'Displaced',    icon: '🏕️',  shortcut: '6' },
+  { id: 'validation',    label: 'Validation',   icon: '🔬',  shortcut: '7' },
+  { id: 'mirror',        label: 'MIRROR',       icon: '🔮',  shortcut: '8' },
+  { id: 'flood_ledger',  label: 'FloodLedger',  icon: '🔗',  shortcut: '9' },
+  { id: 'chorus',        label: 'CHORUS',       icon: '📢',  shortcut: '0' },
+  { id: 'scarnet',       label: 'ScarNet',      icon: '🛰️',  shortcut: '' },
+  { id: 'controller',    label: 'Controller',   icon: '🎬',  shortcut: '' },
 ]
 
 function LazyFallback() {
@@ -68,7 +80,7 @@ function LazyFallback() {
 
 export default function App() {
   const [demoMode, setDemoMode] = useState(false)
-  const [activeTab, setActiveTab] = useState('risk_map')
+  const [activeTab, setActiveTab] = useState('gauges')
   const [presenting, setPresenting] = useState(false)
   const [currentMoment, setCurrentMoment] = useState('cv_gauging')
 
@@ -85,11 +97,11 @@ export default function App() {
   // Keyboard shortcuts
   useEffect(() => {
     const handler = (e) => {
-      // Alt+1-7 for tabs
-      if (e.altKey && e.key >= '1' && e.key <= '7') {
+      // Alt+1-9,0 for tabs
+      if (e.altKey && e.key >= '0' && e.key <= '9') {
         e.preventDefault()
-        const idx = parseInt(e.key) - 1
-        if (idx < TABS.length) setActiveTab(TABS[idx].id)
+        const tab = TABS.find(t => t.shortcut === e.key)
+        if (tab) setActiveTab(tab.id)
         return
       }
       // F11 toggles presentation mode
@@ -105,6 +117,15 @@ export default function App() {
 
   const renderTabContent = () => {
     switch (activeTab) {
+      case 'gauges':
+        return (
+          <Suspense fallback={<LazyFallback />}>
+            <div className="flex-1 relative overflow-auto p-4">
+              <GaugeHeroPanel />
+            </div>
+          </Suspense>
+        )
+
       case 'risk_map':
         return (
           <div className="flex-1 relative">
@@ -183,6 +204,42 @@ export default function App() {
           </div>
         )
 
+      case 'ndma':
+        return (
+          <Suspense fallback={<LazyFallback />}>
+            <div className="flex-1 relative overflow-auto p-4">
+              <NDMACompliancePanel />
+            </div>
+          </Suspense>
+        )
+
+      case 'drones':
+        return (
+          <Suspense fallback={<LazyFallback />}>
+            <div className="flex-1 relative overflow-auto p-4">
+              <DroneMapPanel />
+            </div>
+          </Suspense>
+        )
+
+      case 'displacement':
+        return (
+          <Suspense fallback={<LazyFallback />}>
+            <div className="flex-1 relative overflow-auto p-4">
+              <DisplacementMap />
+            </div>
+          </Suspense>
+        )
+
+      case 'validation':
+        return (
+          <Suspense fallback={<LazyFallback />}>
+            <div className="flex-1 relative overflow-auto p-4">
+              <LiveValidationPanel />
+            </div>
+          </Suspense>
+        )
+
       default:
         return null
     }
@@ -223,7 +280,7 @@ export default function App() {
                 ? 'bg-accent/20 text-accent border border-accent/40 shadow-lg shadow-accent/10'
                 : 'text-gray-400 hover:text-white hover:bg-gray-800/60 border border-transparent'
             }`}
-            title={`Alt+${tab.shortcut}`}
+            title={tab.shortcut ? `Alt+${tab.shortcut}` : tab.label}
           >
             <span className="text-sm">{tab.icon}</span>
             <span className="hidden sm:inline">{tab.label}</span>

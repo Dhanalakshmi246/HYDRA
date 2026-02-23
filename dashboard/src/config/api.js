@@ -54,6 +54,28 @@ const API = Object.freeze({
   monitorAccuracy:   '/api/v1/monitor/accuracy-history',
   monitorRetrain:    '/api/v1/monitor/retrain',
   monitorHealth:     '/api/v1/monitor/health',
+
+  // ── Phase 7 — Gap Closure ──────────────────
+  droneActive:       '/api/v1/drone/active',
+  droneDemoTrigger:  '/api/v1/drone/demo-trigger',
+  droneReadings:     (droneId) => `/api/v1/drone/${droneId}/readings`,
+
+  ndmaBulletins:     '/api/v1/ndma/bulletins',
+  ndmaCompliance:    '/api/v1/ndma/compliance-check',
+  ndmaAlertLevels:   '/api/v1/ndma/alert-levels',
+
+  iotDevices:        '/api/v1/iot/devices',
+  iotProtocols:      '/api/v1/iot/protocols',
+  iotDemoBurst:      '/api/v1/iot/demo-burst',
+
+  flashFloodActive:  '/api/v1/flash-flood/active',
+  flashFloodCheck:   '/api/v1/flash-flood/check',
+
+  displacementSummary: '/api/v1/displacement/summary',
+  displacementShelters:'/api/v1/displacement/shelters',
+  displacementFlows:   '/api/v1/displacement/flows',
+
+  cellBroadcastAlerts: '/api/v1/cell-broadcast/alerts',
 })
 
 export default API

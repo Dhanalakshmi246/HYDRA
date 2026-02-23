@@ -127,17 +127,24 @@ class CWCConnector:
 
     Fetches real-time gauge data from India's WRIS platform.
     Falls back to BASIN_FALLBACK_READINGS when API is unreachable.
+
+    Live switch (Gap 9): Set WRIS_TOKEN env var to enable real CWC data.
+    Without a token, connector operates in fallback/demo mode automatically.
     """
 
     BASE_URL = "https://indiawris.gov.in/api/v1"
 
     def __init__(self, token: Optional[str] = None):
         self.token = token or os.getenv("WRIS_TOKEN", "")
-        if not self.token:
+        self.demo_mode = not bool(self.token)
+        if self.demo_mode:
             logger.warning(
-                "WRIS_TOKEN not set — CWC connector will use fallback readings. "
+                "CWC DEMO MODE: WRIS_TOKEN not set — using synthetic gauge readings. "
+                "Set WRIS_TOKEN for real CWC WRIS data. "
                 "Register at https://indiawris.gov.in to get an API token."
             )
+        else:
+            logger.info("CWC WRIS LIVE MODE — fetching real river gauge data")
 
     def fetch_realtime(self, basin_id: str) -> List[Dict[str, Any]]:
         """Fetch real-time gauge readings for a basin.
@@ -189,7 +196,7 @@ class CWCConnector:
     def test_connection(self) -> Dict[str, Any]:
         """Test connectivity to WRIS API."""
         if not self.token:
-            return {"status": "no_token", "message": "WRIS_TOKEN not configured"}
+            return {"status": "no_token", "message": "WRIS_TOKEN not configured — demo mode active"}
         try:
             import httpx
             resp = httpx.get(
@@ -204,3 +211,12 @@ class CWCConnector:
             }
         except Exception as e:
             return {"status": "error", "message": str(e)[:100]}
+
+    def get_mode(self) -> Dict[str, Any]:
+        """Return current CWC connector mode for dashboard transparency."""
+        return {
+            "mode": "FALLBACK" if self.demo_mode else "LIVE",
+            "data_source": "BASIN_FALLBACK_READINGS (synthetic)" if self.demo_mode else "CWC WRIS API",
+            "live_switch": "Set WRIS_TOKEN env var to enable real data",
+            "token_configured": not self.demo_mode,
+        }

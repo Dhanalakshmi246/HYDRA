@@ -48,12 +48,20 @@ SERVICES = {
     "scarnet":      "http://localhost:8012",
     "model_monitor": "http://localhost:8013",
     "developer_portal": "http://localhost:5175",
+    # Phase 7 services
+    "drone_stream":   "http://localhost:8020",
+    "ndma":           "http://localhost:8021",
+    "iot_gateway":    "http://localhost:8022",
+    "flash_flood":    "http://localhost:8023",
+    "displacement":   "http://localhost:8024",
+    "cell_broadcast": "http://localhost:8025",
 }
 
 # Route prefix → service mapping (for reverse proxy)
 ROUTE_MAP = {
     "/api/v1/ingest":      "ingestion",
     "/api/v1/virtual-gauge": "cv_gauging",
+    "/api/v1/gauge":       "cv_gauging",
     "/api/v1/features":    "feature",
     "/api/v1/predict":     "prediction",
     "/api/v1/predictions": "prediction",
@@ -72,6 +80,14 @@ ROUTE_MAP = {
     "/api/v1/playground":  "developer_portal",
     "/api/v1/docs":        "developer_portal",
     "/api/v1/registry":    "developer_portal",
+    # Phase 7 routes
+    "/api/v1/drone":       "drone_stream",
+    "/api/v1/ndma":        "ndma",
+    "/api/v1/iot":         "iot_gateway",
+    "/api/v1/flash-flood": "flash_flood",
+    "/api/v1/flash":       "flash_flood",
+    "/api/v1/displacement":"displacement",
+    "/api/v1/cell-broadcast": "cell_broadcast",
 }
 
 
@@ -268,6 +284,137 @@ async def basins_summaries():
 
     _cache.set("basins_summaries", enriched)
     return enriched
+
+
+# ── Gauge Aggregation (GaugeHeroPanel) ──────────────────────────────────
+
+@app.get("/api/v1/gauges/active")
+async def get_active_gauges():
+    """Aggregate CWC gauge readings from ingestion service + IoT water level devices.
+
+    Used by GaugeHeroPanel to show all active river gauge readings in one place.
+    Combines CWC fallback/live data with IoT sensor readings.
+    """
+    cached = _cache.get("gauges_active")
+    if cached:
+        return cached
+
+    gauges = []
+    async with httpx.AsyncClient(timeout=5.0) as client:
+        # Fetch from ingestion service (CWC readings)
+        try:
+            resp = await client.get(f"{SERVICES['ingestion']}/api/v1/ingest/readings")
+            if resp.status_code == 200:
+                data = resp.json()
+                readings = data.get("readings", data) if isinstance(data, dict) else data
+                if isinstance(readings, list):
+                    for r in readings:
+                        gauges.append({
+                            "station_id": r.get("station_id", "unknown"),
+                            "station_name": r.get("station_name", r.get("station_id", "unknown")),
+                            "level_m": r.get("level_m", r.get("water_level", 0)),
+                            "danger_level_m": r.get("danger_level_m", 7.0),
+                            "warning_level_m": r.get("warning_level_m", 6.0),
+                            "flow_cumecs": r.get("flow_cumecs", 0),
+                            "quality_flag": r.get("quality_flag", "SYNTHETIC"),
+                            "source": r.get("source", "CWC_WRIS"),
+                        })
+        except Exception:
+            pass
+
+        # Fetch IoT water level sensors
+        try:
+            resp = await client.get(f"{SERVICES['iot_gateway']}/api/v1/iot/devices")
+            if resp.status_code == 200:
+                devices = resp.json().get("devices", [])
+                for d in devices:
+                    if d.get("device_type") == "WATER_LEVEL":
+                        last = d.get("last_reading", {})
+                        gauges.append({
+                            "station_id": d.get("device_id", "unknown"),
+                            "station_name": f"{d.get('device_id', 'IoT')} ({d.get('basin_id', '')})",
+                            "level_m": last.get("value", 0) if isinstance(last, dict) else 0,
+                            "danger_level_m": 7.0,
+                            "warning_level_m": 6.0,
+                            "flow_cumecs": 0,
+                            "quality_flag": "REAL",
+                            "source": d.get("protocol", "IOT"),
+                        })
+        except Exception:
+            pass
+
+    # If no live gauges, provide CWC fallback data
+    if not gauges:
+        gauges = [
+            {"station_id": "CWC_DIBRUGARH_01", "station_name": "Dibrugarh",
+             "level_m": 4.8, "danger_level_m": 7.0, "warning_level_m": 6.0,
+             "flow_cumecs": 8500, "quality_flag": "SYNTHETIC", "source": "FALLBACK"},
+            {"station_id": "CWC_NEAMATI_01", "station_name": "Neamati (Jorhat)",
+             "level_m": 5.3, "danger_level_m": 7.0, "warning_level_m": 6.0,
+             "flow_cumecs": 12000, "quality_flag": "SYNTHETIC", "source": "FALLBACK"},
+            {"station_id": "CWC_TEZPUR_01", "station_name": "Tezpur",
+             "level_m": 6.2, "danger_level_m": 7.0, "warning_level_m": 6.0,
+             "flow_cumecs": 15000, "quality_flag": "SYNTHETIC", "source": "FALLBACK"},
+            {"station_id": "CWC_GUWAHATI_01", "station_name": "Guwahati (Pandu)",
+             "level_m": 3.5, "danger_level_m": 7.0, "warning_level_m": 6.0,
+             "flow_cumecs": 7200, "quality_flag": "SYNTHETIC", "source": "FALLBACK"},
+            {"station_id": "CWC_KULLU_01", "station_name": "Kullu",
+             "level_m": 2.1, "danger_level_m": 5.0, "warning_level_m": 4.0,
+             "flow_cumecs": 450, "quality_flag": "SYNTHETIC", "source": "FALLBACK"},
+            {"station_id": "CWC_PANDOH_01", "station_name": "Pandoh Dam",
+             "level_m": 3.8, "danger_level_m": 5.0, "warning_level_m": 4.0,
+             "flow_cumecs": 920, "quality_flag": "SYNTHETIC", "source": "FALLBACK"},
+        ]
+
+    result = {"active_count": len(gauges), "gauges": gauges}
+    _cache.set("gauges_active", result)
+    return result
+
+
+@app.get("/api/v1/soil/moisture/summary")
+async def get_soil_moisture_summary():
+    """Soil moisture data for GaugeHeroPanel.
+
+    Aggregates soil moisture readings from IoT gateway sensors.
+    """
+    cached = _cache.get("soil_moisture")
+    if cached:
+        return cached
+
+    stations = []
+    async with httpx.AsyncClient(timeout=5.0) as client:
+        try:
+            resp = await client.get(f"{SERVICES['iot_gateway']}/api/v1/iot/devices")
+            if resp.status_code == 200:
+                devices = resp.json().get("devices", [])
+                for d in devices:
+                    if d.get("device_type") == "SOIL_MOISTURE":
+                        last = d.get("last_reading", {})
+                        stations.append({
+                            "station_id": d.get("device_id", "unknown"),
+                            "station_name": f"{d.get('device_id', 'Soil')} ({d.get('basin_id', '')})",
+                            "moisture_m3m3": last.get("value", 0.35) if isinstance(last, dict) else 0.35,
+                            "field_capacity_m3m3": 0.42,
+                        })
+        except Exception:
+            pass
+
+    # Fallback soil moisture stations
+    if not stations:
+        stations = [
+            {"station_id": "SOIL_BEAS_01", "station_name": "Beas Upper Kullu",
+             "moisture_m3m3": 0.36, "field_capacity_m3m3": 0.42},
+            {"station_id": "SOIL_MAJULI_01", "station_name": "Majuli Nimati",
+             "moisture_m3m3": 0.38, "field_capacity_m3m3": 0.42},
+            {"station_id": "SOIL_JORHAT_01", "station_name": "Jorhat Riverside",
+             "moisture_m3m3": 0.31, "field_capacity_m3m3": 0.42},
+            {"station_id": "SOIL_KULLU_02", "station_name": "Kullu Valley Floor",
+             "moisture_m3m3": 0.34, "field_capacity_m3m3": 0.28},
+        ]
+
+    result = {"stations": stations, "count": len(stations)}
+    _cache.set("soil_moisture", result)
+    return result
 
 
 # ── Aggregated Health ────────────────────────────────────────────────────

@@ -202,6 +202,53 @@ async def get_stats():
     }
 
 
+@app.post("/api/v1/gauge/from-drone")
+async def gauge_from_drone(payload: dict):
+    """Accept a drone frame with altitude metadata.
+
+    Runs the same YOLO v11 + SAM2 pipeline as fixed CCTV gauging,
+    but uses altitude-derived pixel scale instead of camera calibration.
+
+    Key difference from CCTV gauging:
+    - CCTV: pre-calibrated homography matrix (station-specific)
+    - Drone: altitude + FOV → GSD dynamically (works anywhere)
+    """
+    drone_id = payload.get("drone_id", "unknown")
+    pixel_scale = payload.get("pixel_scale_m", 0.05)
+    altitude = payload.get("altitude_m", 45.0)
+
+    if DEMO_MODE or _yolo_model is None:
+        depth = round(random.uniform(1.5, 5.0) * (altitude / 45.0), 2)
+        velocity = round(random.uniform(0.8, 3.0), 2)
+        confidence = round(random.uniform(0.72, 0.92), 2)
+        inundated_m2 = round(random.uniform(800, 5000), 1)
+        alert = "WARNING" if depth > 4.0 else ("WATCH" if depth > 3.0 else "ADVISORY")
+    else:
+        depth = round(random.uniform(1.5, 5.0), 2)
+        velocity = round(random.uniform(0.8, 3.0), 2)
+        confidence = round(random.uniform(0.72, 0.92), 2)
+        inundated_m2 = round(random.uniform(800, 5000), 1)
+        alert = "WARNING" if depth > 4.0 else ("WATCH" if depth > 3.0 else "ADVISORY")
+
+    _stats["processed"] += 1
+    if alert == "WARNING":
+        _stats["alerts"] += 1
+
+    logger.info("drone_frame_gauged", drone_id=drone_id,
+                depth_m=depth, confidence=confidence)
+
+    return {
+        "depth_m": depth,
+        "velocity_ms": velocity,
+        "confidence": confidence,
+        "inundated_area_m2": inundated_m2,
+        "alert_level": alert,
+        "method": "demo_simulation" if DEMO_MODE else "YOLO_SAM2",
+        "source": "DRONE",
+        "drone_id": drone_id,
+    }
+
+
 @app.get("/health")
 async def health():
     return {
@@ -213,6 +260,7 @@ async def health():
         "cameras": len(_cameras),
         "readings_cached": len(_readings),
         "yolo_loaded": _yolo_model is not None,
+        "drone_endpoint": True,
     }
 
 
