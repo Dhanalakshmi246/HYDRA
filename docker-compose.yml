@@ -87,6 +87,12 @@ services:
       - ingestion
       - timescaledb
 
+  # ── Redis (prediction cache) ────────────────────────────
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+
   # ── Sabarish — Prediction ──────────────────────────────
   prediction:
     build:
@@ -97,10 +103,18 @@ services:
     env_file: .env
     environment:
       KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+      TIMESCALE_URL: postgresql://argus:argus@timescaledb:5432/argus
+      REDIS_URL: redis://redis:6379/0
+      XGBOOST_MODEL_PATH: ./models/xgboost_flood.joblib
+      TRAINING_DATA_PATH: ./data/cwc_historical_2019_2023.csv
+      TRAIN_ON_STARTUP: "true"
+      FEATURE_POLL_INTERVAL_SEC: "60"
       SERVICE_HOST: "0.0.0.0"
     depends_on:
       - kafka
       - feature_engine
+      - timescaledb
+      - redis
 
   # ── Dhana — Alert Dispatcher ───────────────────────────
   alert_dispatcher:
@@ -128,6 +142,9 @@ services:
     environment:
       KAFKA_BOOTSTRAP_SERVERS: kafka:29092
       SERVICE_HOST: "0.0.0.0"
+    volumes:
+      - ./data:/app/data
+      - ./models:/app/models
     depends_on:
       - kafka
 

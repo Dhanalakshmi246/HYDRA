@@ -28,16 +28,23 @@ env/
 Thumbs.db
 desktop.ini
 
+# Node / Dashboard
+node_modules/
+dashboard/dist/
+dashboard/node_modules/
+
 # Model artefacts (too large for git)
 models/*.pt
 models/*.json
 models/*.bin
+models/*.joblib
 !models/.gitkeep
 
 # Data files
 data/*.mp4
 data/*.avi
 data/*.csv
+data/*.sqlite
 !data/.gitkeep
 !data/cctv_registry.json
 !data/station_topology.json

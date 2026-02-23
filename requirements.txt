@@ -30,3 +30,12 @@ asyncpg>=0.29,<1.0
 
 # Signal processing
 scipy>=1.12,<2.0
+
+# Prediction fast-track
+joblib>=1.3,<2.0
+pandas>=2.1,<3.0
+redis>=5.0,<6.0
+
+# ACN Node (offline edge)
+playsound>=1.3,<2.0
+# twilio>=9.0,<10.0  # optional — uncomment for IVR calls

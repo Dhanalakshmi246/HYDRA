@@ -39,10 +39,17 @@ class Settings:
     PIXEL_TO_METER_DEFAULT: float = float(os.getenv("PIXEL_TO_METER_DEFAULT", "0.05"))
 
     # ── Prediction ───────────────────────────────────────────
-    XGBOOST_MODEL_PATH: str = os.getenv("XGBOOST_MODEL_PATH", "./models/xgb_flood_v1.json")
+    XGBOOST_MODEL_PATH: str = os.getenv("XGBOOST_MODEL_PATH", "./models/xgboost_flood.joblib")
     PINN_MODEL_PATH: str = os.getenv("PINN_MODEL_PATH", "./models/pinn_mesh_v1.pt")
     PREDICTION_INTERVAL_S: int = int(os.getenv("PREDICTION_INTERVAL_S", "300"))
     SHAP_TOP_K: int = int(os.getenv("SHAP_TOP_K", "5"))
+    SHAP_TOP_N: int = int(os.getenv("SHAP_TOP_N", "3"))
+    TRAIN_ON_STARTUP: bool = os.getenv("TRAIN_ON_STARTUP", "true").lower() in ("true", "1", "yes")
+    FEATURE_POLL_INTERVAL_SEC: int = int(os.getenv("FEATURE_POLL_INTERVAL_SEC", "60"))
+
+    # ── Redis ────────────────────────────────────────────────
+    REDIS_URL: str = os.getenv("REDIS_URL", "redis://localhost:6379/0")
+    PREDICTION_REDIS_TTL: int = int(os.getenv("PREDICTION_REDIS_TTL", "300"))
 
     # ── Feature Engine ───────────────────────────────────────
     FEATURE_WINDOW_1H: int = int(os.getenv("FEATURE_WINDOW_1H", "12"))   # 12 × 5 min = 1 h
