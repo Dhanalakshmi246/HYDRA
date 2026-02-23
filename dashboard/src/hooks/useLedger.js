@@ -6,8 +6,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import axios from 'axios'
-
-const LEDGER_API = import.meta.env.VITE_LEDGER_API || '/api/v1/ledger'
+import API from '../config/api'
 
 // Demo fallback
 const DEMO_SUMMARY = {
@@ -37,8 +36,8 @@ export default function useLedger(demoMode = false) {
     setLoading(true)
     try {
       const [sumRes, chainRes] = await Promise.all([
-        axios.get(`${LEDGER_API}/chain/summary`),
-        axios.get(`${LEDGER_API}/chain`),
+        axios.get(API.ledgerSummary),
+        axios.get(API.ledgerChain),
       ])
       setSummary(sumRes.data)
       setChain(chainRes.data.slice(-8))
@@ -59,7 +58,7 @@ export default function useLedger(demoMode = false) {
   const verifyChain = useCallback(async () => {
     setVerifying(true)
     try {
-      const { data } = await axios.get(`${LEDGER_API}/verify`)
+      const { data } = await axios.get(API.ledgerVerify)
       setIntegrity(data.integrity)
     } catch {
       setIntegrity(true)
@@ -69,7 +68,7 @@ export default function useLedger(demoMode = false) {
 
   const simulateFloodEvent = useCallback(async (villageId = 'kullu_01') => {
     try {
-      await axios.post(`${LEDGER_API}/demo/flood`, null, { params: { village_id: villageId } })
+      await axios.post(API.ledgerDemoFlood(villageId))
       await fetchData()
     } catch {
       // Add demo payout

@@ -1,47 +1,73 @@
-import { useState } from 'react'
+import { useState, useEffect, lazy, Suspense } from 'react'
 
-// Phase 1 components
+// Phase 1 components (always loaded — lightweight)
 import ARGUSMap from './components/ARGUSMap'
 import MetricsBar from './components/MetricsBar'
 import AlertSidebar from './components/AlertSidebar'
 import RiskLegend from './components/RiskLegend'
 import ACNStatus from './components/ACNStatus'
+import SystemHealth from './components/SystemHealth'
 
-// Phase 2 components
-import EvacuationMap from './components/EvacuationMap'
-import MirrorPanel from './components/MirrorPanel'
-import FloodLedger from './components/FloodLedger'
+// Phase 2 components (lazy-loaded — heavier panels)
+const EvacuationMap = lazy(() => import('./components/EvacuationMap'))
+const MirrorPanel = lazy(() => import('./components/MirrorPanel'))
+const FloodLedger = lazy(() => import('./components/FloodLedger'))
 import ChorusActivity from './components/ChorusActivity'
+
+// Phase 3 components (lazy-loaded)
+const ScarNetPanel = lazy(() => import('./components/ScarNetPanel'))
+const PresentationMode = lazy(() => import('./components/PresentationMode'))
+import DemoController from './components/DemoController'
 
 import usePredictions from './hooks/usePredictions'
 import useAlertLog from './hooks/useAlertLog'
 
+// Presentation CSS
+import './styles/presentation.css'
+
 /**
- * Root layout — Phase 2 Tab Navigation:
+ * Root layout — Phase 3 Final:
  *
- *  ┌──────────────────── MetricsBar ─────────────────────┐
- *  │ HYDRA ARGUS │ stats...            │ DEMO toggle     │
+ *  ┌──────────── MetricsBar ── SystemHealth ─────────────┐
+ *  │ HYDRA ARGUS │ stats...     │ Health │ DEMO toggle   │
  *  ├─────────────────────────────────────────────────────┤
- *  │ [🗺 Risk Map] [🚌 Evacuation] [🔮 MIRROR]          │
- *  │ [🔗 FloodLedger] [📢 CHORUS]                       │
+ *  │ [🗺 Risk] [🚌 Evac] [🔮 MIRROR] [🔗 Ledger]       │
+ *  │ [📢 CHORUS] [🛰️ ScarNet] [🎬 Controller]           │
  *  ├─────────────────────────────┬───────────────────────┤
  *  │                             │                       │
  *  │     Active Tab Content      │   AlertSidebar        │
  *  │                             │                       │
  *  └─────────────────────────────┴───────────────────────┘
+ *
+ *  PresentationMode: z-50 fullscreen overlay (F11 / button)
  */
 
 const TABS = [
-  { id: 'risk_map', label: 'Risk Map', icon: '🗺️', shortcut: '1' },
-  { id: 'evacuation', label: 'Evacuation', icon: '🚌', shortcut: '2' },
-  { id: 'mirror', label: 'MIRROR', icon: '🔮', shortcut: '3' },
-  { id: 'flood_ledger', label: 'FloodLedger', icon: '🔗', shortcut: '4' },
-  { id: 'chorus', label: 'CHORUS', icon: '📢', shortcut: '5' },
+  { id: 'risk_map',     label: 'Risk Map',     icon: '🗺️',  shortcut: '1' },
+  { id: 'evacuation',   label: 'Evacuation',   icon: '🚌',  shortcut: '2' },
+  { id: 'mirror',       label: 'MIRROR',       icon: '🔮',  shortcut: '3' },
+  { id: 'flood_ledger', label: 'FloodLedger',  icon: '🔗',  shortcut: '4' },
+  { id: 'chorus',       label: 'CHORUS',       icon: '📢',  shortcut: '5' },
+  { id: 'scarnet',      label: 'ScarNet',      icon: '🛰️',  shortcut: '6' },
+  { id: 'controller',   label: 'Controller',   icon: '🎬',  shortcut: '7' },
 ]
+
+function LazyFallback() {
+  return (
+    <div className="flex-1 flex items-center justify-center bg-navy">
+      <div className="text-center">
+        <div className="w-8 h-8 border-2 border-accent border-t-transparent rounded-full animate-spin mx-auto mb-3" />
+        <p className="text-gray-500 font-body text-xs">Loading panel...</p>
+      </div>
+    </div>
+  )
+}
 
 export default function App() {
   const [demoMode, setDemoMode] = useState(false)
   const [activeTab, setActiveTab] = useState('risk_map')
+  const [presenting, setPresenting] = useState(false)
+  const [currentMoment, setCurrentMoment] = useState('cv_gauging')
 
   const { predictions, loading, stale, lastUpdated, activeAlerts } =
     usePredictions(demoMode)
@@ -53,15 +79,26 @@ export default function App() {
     ? Math.max(...predictions.map((p) => p.risk_score || 0))
     : 0
 
-  // Keyboard shortcuts for tabs
-  if (typeof window !== 'undefined') {
-    window.onkeydown = (e) => {
-      if (e.altKey && e.key >= '1' && e.key <= '5') {
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handler = (e) => {
+      // Alt+1-7 for tabs
+      if (e.altKey && e.key >= '1' && e.key <= '7') {
         e.preventDefault()
-        setActiveTab(TABS[parseInt(e.key) - 1].id)
+        const idx = parseInt(e.key) - 1
+        if (idx < TABS.length) setActiveTab(TABS[idx].id)
+        return
+      }
+      // F11 toggles presentation mode
+      if (e.key === 'F11') {
+        e.preventDefault()
+        setPresenting(p => !p)
+        return
       }
     }
-  }
+    window.addEventListener('keydown', handler)
+    return () => window.removeEventListener('keydown', handler)
+  }, [])
 
   const renderTabContent = () => {
     switch (activeTab) {
@@ -85,34 +122,61 @@ export default function App() {
 
       case 'evacuation':
         return (
-          <div className="flex-1 relative overflow-auto">
-            <EvacuationMap
-              selectedVillage="kullu_01"
-              riskScore={maxRisk}
-              demoMode={demoMode}
-              fullScreen={true}
-            />
-          </div>
+          <Suspense fallback={<LazyFallback />}>
+            <div className="flex-1 relative overflow-auto">
+              <EvacuationMap
+                selectedVillage="kullu_01"
+                riskScore={maxRisk}
+                demoMode={demoMode}
+                fullScreen={true}
+              />
+            </div>
+          </Suspense>
         )
 
       case 'mirror':
         return (
-          <div className="flex-1 relative overflow-auto">
-            <MirrorPanel demoMode={demoMode} fullScreen={true} />
-          </div>
+          <Suspense fallback={<LazyFallback />}>
+            <div className="flex-1 relative overflow-auto">
+              <MirrorPanel demoMode={demoMode} fullScreen={true} />
+            </div>
+          </Suspense>
         )
 
       case 'flood_ledger':
         return (
-          <div className="flex-1 relative overflow-auto">
-            <FloodLedger demoMode={demoMode} fullScreen={true} />
-          </div>
+          <Suspense fallback={<LazyFallback />}>
+            <div className="flex-1 relative overflow-auto">
+              <FloodLedger demoMode={demoMode} fullScreen={true} />
+            </div>
+          </Suspense>
         )
 
       case 'chorus':
         return (
           <div className="flex-1 relative overflow-auto">
             <ChorusActivity demoMode={demoMode} fullScreen={true} />
+          </div>
+        )
+
+      case 'scarnet':
+        return (
+          <Suspense fallback={<LazyFallback />}>
+            <div className="flex-1 relative overflow-auto">
+              <ScarNetPanel demoMode={demoMode} fullScreen={true} />
+            </div>
+          </Suspense>
+        )
+
+      case 'controller':
+        return (
+          <div className="flex-1 relative overflow-auto">
+            <DemoController
+              currentMoment={currentMoment}
+              onMomentChange={setCurrentMoment}
+              onPresent={() => setPresenting(p => !p)}
+              isPresenting={presenting}
+            />
           </div>
         )
 
@@ -123,6 +187,18 @@ export default function App() {
 
   return (
     <div className="h-screen w-screen flex flex-col bg-navy overflow-hidden">
+      {/* Presentation mode overlay */}
+      {presenting && (
+        <Suspense fallback={<LazyFallback />}>
+          <PresentationMode
+            currentMoment={currentMoment}
+            onMomentChange={setCurrentMoment}
+            onClose={() => setPresenting(false)}
+            predictions={predictions}
+          />
+        </Suspense>
+      )}
+
       {/* Top bar */}
       <MetricsBar
         predictions={predictions}
@@ -151,7 +227,12 @@ export default function App() {
           </button>
         ))}
 
-        {/* Live status indicators on tab bar */}
+        {/* System Health badge */}
+        <div className="ml-2 border-l border-gray-800 pl-2">
+          <SystemHealth />
+        </div>
+
+        {/* Live status indicators */}
         <div className="ml-auto flex items-center gap-3 text-[10px] text-gray-500">
           {predictions.length > 0 && (
             <span className="flex items-center gap-1">
@@ -165,6 +246,15 @@ export default function App() {
               {activeAlerts} alerts
             </span>
           )}
+          {/* Presentation mode quick toggle */}
+          <button
+            onClick={() => setPresenting(p => !p)}
+            className="flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] hover:bg-gray-800/60 transition-colors"
+            title="F11 — Toggle Presentation Mode"
+          >
+            <span>🎬</span>
+            <span className="hidden md:inline text-gray-500">Present</span>
+          </button>
         </div>
       </div>
 

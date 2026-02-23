@@ -6,8 +6,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import axios from 'axios'
-
-const MIRROR_API = import.meta.env.VITE_MIRROR_API || '/api/v1/mirror'
+import API from '../config/api'
 
 // Demo fallback
 const DEMO_EVENT = {
@@ -92,7 +91,7 @@ export default function useMirrorData(demoMode = false, eventId = 'himachal_2023
     setLoading(true)
     setError(null)
     try {
-      const { data } = await axios.get(`${MIRROR_API}/event/${eventId}/counterfactuals`)
+      const { data } = await axios.get(API.mirrorCF(eventId))
       setEvent(data.event)
       setCounterfactuals(data.counterfactuals || [])
       setSliderData(data.slider_data || [])
@@ -112,7 +111,7 @@ export default function useMirrorData(demoMode = false, eventId = 'himachal_2023
     setLoading(true)
     try {
       const { data } = await axios.post(
-        `${MIRROR_API}/event/${eventId}/custom`,
+        API.mirrorCustom(eventId),
         null,
         { params: { intervention_time_min: interventionTime, depth_factor: depthFactor } }
       )
@@ -135,7 +134,7 @@ export default function useMirrorData(demoMode = false, eventId = 'himachal_2023
   }, [eventId])
 
   const downloadReport = useCallback(() => {
-    window.open(`${MIRROR_API}/event/${eventId}/report`, '_blank')
+    window.open(API.mirrorReport(eventId), '_blank')
   }, [eventId])
 
   useEffect(() => { fetchAll() }, [fetchAll])

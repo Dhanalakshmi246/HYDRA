@@ -6,8 +6,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import axios from 'axios'
-
-const CAUSAL_API = import.meta.env.VITE_CAUSAL_API || '/api/v1/causal'
+import API from '../config/api'
 
 const DEMO_RISK = {
   village_id: 'kullu_01',
@@ -43,7 +42,7 @@ export default function useCausalRisk(demoMode = false, villageId = 'kullu_01') 
     setLoading(true)
     setError(null)
     try {
-      const { data } = await axios.get(`${CAUSAL_API}/risk/${villageId}`)
+      const { data } = await axios.get(API.causalRisk(villageId))
       setRisk(data)
     } catch (err) {
       if (demoMode) {

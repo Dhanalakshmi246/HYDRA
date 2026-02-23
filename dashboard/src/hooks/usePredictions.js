@@ -1,8 +1,9 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import axios from 'axios'
 import VILLAGES from '../data/villages'
+import API from '../config/api'
 
-const API_BASE = import.meta.env.VITE_PREDICTION_API || 'http://localhost:8004'
+const API_BASE = import.meta.env.VITE_PREDICTION_API || ''
 const DEFAULT_POLL = Number(import.meta.env.VITE_POLL_INTERVAL) || 30000
 const FAST_POLL = 10000
 
@@ -118,7 +119,7 @@ export default function usePredictions(demoMode = false) {
     }
 
     try {
-      const resp = await axios.get(`${API_BASE}/api/v1/predictions/all`, {
+      const resp = await axios.get(API.predictions, {
         timeout: 8000,
       })
       setPredictions(mergePredictions(resp.data))

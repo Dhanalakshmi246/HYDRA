@@ -6,8 +6,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import axios from 'axios'
-
-const EVAC_API = import.meta.env.VITE_EVAC_API || '/api/v1/evacuation'
+import API from '../config/api'
 
 // Demo fallback data
 const DEMO_PLAN = {
@@ -68,7 +67,7 @@ export default function useEvacuationPlan(demoMode = false, scenarioId = 'majuli
     setLoading(true)
     setError(null)
     try {
-      const { data } = await axios.get(`${EVAC_API}/plan/${scenarioId}`)
+      const { data } = await axios.get(API.evacPlan(scenarioId))
       setPlan(data)
     } catch (err) {
       if (demoMode) {
@@ -82,7 +81,7 @@ export default function useEvacuationPlan(demoMode = false, scenarioId = 'majuli
 
   const fetchNotifications = useCallback(async () => {
     try {
-      const { data } = await axios.get(`${EVAC_API}/notifications`)
+      const { data } = await axios.get(API.evacNotify)
       setNotifications(data.notifications || [])
     } catch {
       if (demoMode) setNotifications(DEMO_NOTIFICATIONS)
@@ -92,7 +91,7 @@ export default function useEvacuationPlan(demoMode = false, scenarioId = 'majuli
   const triggerDemo = useCallback(async () => {
     setLoading(true)
     try {
-      const { data } = await axios.post(`${EVAC_API}/demo`)
+      const { data } = await axios.post(API.evacDemo)
       setPlan(data.plan || data)
       setNotifications(data.notifications || [])
     } catch {
@@ -105,7 +104,7 @@ export default function useEvacuationPlan(demoMode = false, scenarioId = 'majuli
   const recompute = useCallback(async () => {
     setLoading(true)
     try {
-      const { data } = await axios.post(`${EVAC_API}/compute`, { scenario_id: scenarioId })
+      const { data } = await axios.post(API.evacCompute, { scenario_id: scenarioId })
       setPlan(data)
     } catch (err) {
       setError(err.message)

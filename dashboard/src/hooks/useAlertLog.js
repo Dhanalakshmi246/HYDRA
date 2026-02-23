@@ -1,7 +1,8 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import axios from 'axios'
+import API from '../config/api'
 
-const ALERT_API = import.meta.env.VITE_ALERT_API || 'http://localhost:8005'
+const ALERT_API = import.meta.env.VITE_ALERT_API || ''
 const POLL_INTERVAL = 10000 // 10 seconds
 
 /**
@@ -54,7 +55,7 @@ export default function useAlertLog(demoMode = false) {
     }
 
     try {
-      const resp = await axios.get(`${ALERT_API}/api/v1/alert/log`, {
+      const resp = await axios.get(API.alertLog, {
         timeout: 5000,
       })
       setAlerts(resp.data)

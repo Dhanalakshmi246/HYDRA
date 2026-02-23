@@ -6,8 +6,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import axios from 'axios'
-
-const FL_API = import.meta.env.VITE_FL_API || '/api/v1/fl'
+import API from '../config/api'
 
 const DEMO_STATUS = {
   mode: 'ORACLE',
@@ -35,7 +34,7 @@ export default function useFederatedStatus(demoMode = false) {
   const fetchStatus = useCallback(async () => {
     setLoading(true)
     try {
-      const { data } = await axios.get(`${FL_API}/status`)
+      const { data } = await axios.get(API.flStatus)
       setStatus(data)
     } catch {
       if (demoMode) setStatus(DEMO_STATUS)

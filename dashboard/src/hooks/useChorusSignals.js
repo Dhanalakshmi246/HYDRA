@@ -6,8 +6,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react'
 import axios from 'axios'
-
-const CHORUS_API = import.meta.env.VITE_CHORUS_API || '/api/v1/chorus'
+import API from '../config/api'
 
 const DEMO_SIGNALS = [
   {
@@ -45,7 +44,7 @@ export default function useChorusSignals(demoMode = false) {
   const fetchStats = useCallback(async () => {
     setLoading(true)
     try {
-      const { data } = await axios.get(`${CHORUS_API}/stats`)
+      const { data } = await axios.get(API.chorusStats)
       setStats(data)
     } catch {
       if (demoMode) {
@@ -68,9 +67,7 @@ export default function useChorusSignals(demoMode = false) {
 
   const generateDemo = useCallback(async (villageId = 'kullu_01', count = 5) => {
     try {
-      await axios.post(`${CHORUS_API}/demo/generate`, null, {
-        params: { village_id: villageId, count },
-      })
+      await axios.post(API.chorusDemoGenerate(villageId, count))
       await fetchStats()
     } catch {
       // Add demo signal
@@ -91,7 +88,7 @@ export default function useChorusSignals(demoMode = false) {
   useEffect(() => {
     if (!demoMode) {
       try {
-        const wsUrl = `ws://${window.location.hostname}:8008/ws/signals`
+        const wsUrl = API.chorusWS
         const ws = new WebSocket(wsUrl)
         ws.onmessage = (evt) => {
           try {
