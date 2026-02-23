@@ -67,6 +67,43 @@ class Settings:
     ALERT_KAFKA_TOPIC: str = os.getenv("ALERT_KAFKA_TOPIC", "alerts.dispatch")
     ALERT_COOLDOWN_S: int = int(os.getenv("ALERT_COOLDOWN_S", "900"))  # 15 min
 
+    # ═══════════════════════  PHASE 2  ════════════════════════
+
+    # ── Causal Engine ────────────────────────────────────────
+    CAUSAL_DAG_PATH: str = os.getenv("CAUSAL_DAG_PATH", "./shared/causal_dag/beas_brahmaputra_v1.json")
+    CAUSAL_GNN_HIDDEN: int = int(os.getenv("CAUSAL_GNN_HIDDEN", "64"))
+    CAUSAL_GNN_LAYERS: int = int(os.getenv("CAUSAL_GNN_LAYERS", "3"))
+    CAUSAL_ENGINE_PORT: int = int(os.getenv("CAUSAL_ENGINE_PORT", "8007"))
+
+    # ── FloodLedger ──────────────────────────────────────────
+    LEDGER_DB_PATH: str = os.getenv("LEDGER_DB_PATH", "./data/flood_ledger.db")
+    LEDGER_PORT: int = int(os.getenv("LEDGER_PORT", "8008"))
+    LEDGER_DIFFICULTY: int = int(os.getenv("LEDGER_DIFFICULTY", "2"))  # PoW leading zeros
+
+    # ── CHORUS ───────────────────────────────────────────────
+    CHORUS_PORT: int = int(os.getenv("CHORUS_PORT", "8009"))
+    CHORUS_WINDOW_MIN: int = int(os.getenv("CHORUS_WINDOW_MIN", "60"))
+    CHORUS_CREDIBILITY_THRESHOLD: float = float(os.getenv("CHORUS_CREDIBILITY_THRESHOLD", "0.3"))
+    WHATSAPP_WEBHOOK_SECRET: str = os.getenv("WHATSAPP_WEBHOOK_SECRET", "")
+
+    # ── Federated Learning ───────────────────────────────────
+    FL_SERVER_PORT: int = int(os.getenv("FL_SERVER_PORT", "8010"))
+    FL_ROUNDS: int = int(os.getenv("FL_ROUNDS", "10"))
+    FL_MIN_CLIENTS: int = int(os.getenv("FL_MIN_CLIENTS", "2"))
+    FL_AGGREGATION: str = os.getenv("FL_AGGREGATION", "fedavg")
+    FL_DP_EPSILON: float = float(os.getenv("FL_DP_EPSILON", "1.0"))
+    FL_DP_DELTA: float = float(os.getenv("FL_DP_DELTA", "1e-5"))
+
+    # ── Evacuation RL ────────────────────────────────────────
+    EVAC_RL_PORT: int = int(os.getenv("EVAC_RL_PORT", "8011"))
+    EVAC_MODEL_PATH: str = os.getenv("EVAC_MODEL_PATH", "./models/evac_ppo.zip")
+    EVAC_GRAPH_PATH: str = os.getenv("EVAC_GRAPH_PATH", "./data/evacuation_graph.json")
+    EVAC_RETRAIN_INTERVAL_S: int = int(os.getenv("EVAC_RETRAIN_INTERVAL_S", "3600"))
+
+    # ── MIRROR ───────────────────────────────────────────────
+    MIRROR_PORT: int = int(os.getenv("MIRROR_PORT", "8012"))
+    MIRROR_MAX_STEPS: int = int(os.getenv("MIRROR_MAX_STEPS", "48"))  # max replay steps
+
     # ── General ──────────────────────────────────────────────
     SERVICE_HOST: str = os.getenv("SERVICE_HOST", "0.0.0.0")
     LOG_LEVEL: str = os.getenv("LOG_LEVEL", "INFO")

@@ -148,6 +148,94 @@ services:
     depends_on:
       - kafka
 
+  # ── Phase 2: Sabarish — Causal Engine ────────────────────
+  causal_engine:
+    build:
+      context: .
+      dockerfile: services/causal_engine/Dockerfile
+    ports:
+      - "8007:8007"
+    env_file: .env
+    environment:
+      SERVICE_HOST: "0.0.0.0"
+      CAUSAL_ENGINE_PORT: "8007"
+      CAUSAL_DAG_PATH: ./shared/causal_dag/dag.json
+    depends_on:
+      - kafka
+
+  # ── Phase 2: Sabarish — FloodLedger (Blockchain) ───────
+  flood_ledger:
+    build:
+      context: .
+      dockerfile: services/flood_ledger/Dockerfile
+    ports:
+      - "8008:8008"
+    env_file: .env
+    environment:
+      SERVICE_HOST: "0.0.0.0"
+      LEDGER_PORT: "8008"
+      LEDGER_DB_PATH: /app/data/ledger.db
+    volumes:
+      - ./data:/app/data
+    depends_on:
+      - kafka
+
+  # ── Phase 2: Rogesh — CHORUS Community Intelligence ────
+  chorus:
+    build:
+      context: .
+      dockerfile: services/chorus/Dockerfile
+    ports:
+      - "8009:8009"
+    env_file: .env
+    environment:
+      SERVICE_HOST: "0.0.0.0"
+      CHORUS_PORT: "8009"
+    depends_on:
+      - kafka
+
+  # ── Phase 2: Rogesh — Federated Learning Server ────────
+  federated_server:
+    build:
+      context: .
+      dockerfile: services/federated_server/Dockerfile
+    ports:
+      - "8010:8010"
+    env_file: .env
+    environment:
+      SERVICE_HOST: "0.0.0.0"
+      FL_SERVER_PORT: "8010"
+    depends_on:
+      - kafka
+
+  # ── Phase 2: Dhana — Evacuation RL ─────────────────────
+  evacuation_rl:
+    build:
+      context: .
+      dockerfile: services/evacuation_rl/Dockerfile
+    ports:
+      - "8011:8011"
+    env_file: .env
+    environment:
+      SERVICE_HOST: "0.0.0.0"
+      EVAC_RL_PORT: "8011"
+    depends_on:
+      - kafka
+
+  # ── Phase 2: Dhana — MIRROR Counterfactual Replay ──────
+  mirror:
+    build:
+      context: .
+      dockerfile: services/mirror/Dockerfile
+    ports:
+      - "8012:8012"
+    env_file: .env
+    environment:
+      SERVICE_HOST: "0.0.0.0"
+      MIRROR_PORT: "8012"
+    depends_on:
+      - kafka
+
   # ── Dhana — Dashboard ─────────────────────────────────
   dashboard:
     build:
@@ -159,6 +247,11 @@ services:
     depends_on:
       - prediction
       - feature_engine
+      - causal_engine
+      - flood_ledger
+      - chorus
+      - evacuation_rl
+      - mirror
 
 volumes:
   timescale_data:
