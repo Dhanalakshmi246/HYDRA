@@ -1,0 +1,26 @@
+# ARGUS — Python Dependencies
+
+# Core
+fastapi>=0.110,<1.0
+uvicorn[standard]>=0.27,<1.0
+pydantic>=2.5,<3.0
+python-dotenv>=1.0,<2.0
+httpx>=0.27,<1.0
+structlog>=24.1,<25.0
+
+# Kafka
+confluent-kafka>=2.3,<3.0
+
+# ML / Prediction
+xgboost>=2.0,<3.0
+shap>=0.44,<1.0
+numpy>=1.26,<2.0
+scikit-learn>=1.4,<2.0
+
+# CV / Computer Vision (Rogesh's services)
+# ultralytics>=8.1
+# segment-anything
+# opencv-python>=4.9
+
+# PINN (Phase 2 — full PyTorch)
+# torch>=2.2

@@ -1,0 +1,53 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+*.egg
+.eggs/
+*.whl
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Environment
+.env
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Model artefacts (too large for git)
+models/*.pt
+models/*.json
+models/*.bin
+!models/.gitkeep
+
+# Data files
+data/*.mp4
+data/*.avi
+data/*.csv
+!data/.gitkeep
+!data/cctv_registry.json
+!data/station_topology.json
+
+# Logs
+*.log
+logs/
+
+# Docker
+docker-compose.override.yml
+
+# Jupyter
+.ipynb_checkpoints/

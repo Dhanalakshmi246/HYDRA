@@ -1,0 +1,129 @@
+# ── ARGUS — Docker Compose ────────────────────────────────
+# Phase 1: Kafka + Zookeeper + all microservices
+
+version: "3.9"
+
+services:
+  # ── Infrastructure ─────────────────────────────────────
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.6.0
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    ports:
+      - "2181:2181"
+
+  kafka:
+    image: confluentinc/cp-kafka:7.6.0
+    depends_on:
+      - zookeeper
+    ports:
+      - "9092:9092"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29092,PLAINTEXT_HOST://localhost:9092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+
+  # ── Rogesh — Ingestion Pipeline ────────────────────────
+  ingestion:
+    build:
+      context: .
+      dockerfile: services/ingestion/Dockerfile
+    ports:
+      - "8001:8001"
+    env_file: .env
+    environment:
+      KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+      SERVICE_HOST: "0.0.0.0"
+    depends_on:
+      - kafka
+
+  # ── Rogesh — CV Virtual Gauging ────────────────────────
+  cv_gauging:
+    build:
+      context: .
+      dockerfile: services/cv_gauging/Dockerfile
+    ports:
+      - "8002:8002"
+    env_file: .env
+    environment:
+      KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+      SERVICE_HOST: "0.0.0.0"
+    depends_on:
+      - kafka
+      - ingestion
+
+  # ── Sabarish — Feature Engine ──────────────────────────
+  feature_engine:
+    build:
+      context: .
+      dockerfile: services/feature_engine/Dockerfile
+    ports:
+      - "8003:8003"
+    env_file: .env
+    environment:
+      KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+      SERVICE_HOST: "0.0.0.0"
+    depends_on:
+      - kafka
+      - ingestion
+
+  # ── Sabarish — Prediction ──────────────────────────────
+  prediction:
+    build:
+      context: .
+      dockerfile: services/prediction/Dockerfile
+    ports:
+      - "8004:8004"
+    env_file: .env
+    environment:
+      KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+      SERVICE_HOST: "0.0.0.0"
+    depends_on:
+      - kafka
+      - feature_engine
+
+  # ── Dhana — Alert Dispatcher ───────────────────────────
+  alert_dispatcher:
+    build:
+      context: .
+      dockerfile: services/alert_dispatcher/Dockerfile
+    ports:
+      - "8005:8005"
+    env_file: .env
+    environment:
+      KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+      SERVICE_HOST: "0.0.0.0"
+    depends_on:
+      - kafka
+      - prediction
+
+  # ── Dhana — ACN Node ───────────────────────────────────
+  acn_node:
+    build:
+      context: .
+      dockerfile: services/acn_node/Dockerfile
+    ports:
+      - "8006:8006"
+    env_file: .env
+    environment:
+      KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+      SERVICE_HOST: "0.0.0.0"
+    depends_on:
+      - kafka
+
+  # ── Dhana — Dashboard ─────────────────────────────────
+  dashboard:
+    build:
+      context: .
+      dockerfile: dashboard/Dockerfile
+    ports:
+      - "3000:3000"
+    env_file: .env
+    depends_on:
+      - prediction
+      - feature_engine
