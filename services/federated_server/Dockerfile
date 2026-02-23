@@ -4,5 +4,6 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 COPY shared/ shared/
 COPY services/federated_server/ services/federated_server/
-EXPOSE 8010
+COPY data/ data/
+EXPOSE 8009 8080
 CMD ["python", "-m", "services.federated_server.main"]

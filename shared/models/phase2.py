@@ -2,11 +2,11 @@
 
 Covers:
   - Causal Engine (GNN DAG, interventions, counterfactuals)
+  - FloodLedger blockchain oracle (parametric insurance)
   - CHORUS community intelligence
   - Federated Learning
   - Evacuation RL
   - MIRROR counterfactual replay
-  - FloodLedger blockchain oracle
 """
 
 from __future__ import annotations
@@ -19,15 +19,32 @@ from pydantic import BaseModel, Field
 
 
 # ══════════════════════════════════════════════════════════════════════════
-# Causal Engine
+# Causal Engine — Node Types
+# ══════════════════════════════════════════════════════════════════════════
+
+class CausalNodeType(str, Enum):
+    """Pearl-style node type classification."""
+    OBSERVABLE = "OBSERVABLE"       # has a sensor or PINN virtual reading
+    LATENT = "LATENT"              # inferred by model, no direct measurement
+    INTERVENTION = "INTERVENTION"  # can be acted upon (dam gates, pumps)
+    OUTCOME = "OUTCOME"            # what we care about (flood_depth, inundation_area)
+
+
+# ══════════════════════════════════════════════════════════════════════════
+# Causal Engine — Graph Primitives
 # ══════════════════════════════════════════════════════════════════════════
 
 class CausalNode(BaseModel):
     """A node in the causal DAG."""
     node_id: str
     variable: str            # e.g. "rainfall", "soil_moisture", "water_level"
+    node_type: CausalNodeType = CausalNodeType.OBSERVABLE
     station_id: Optional[str] = None
     village_id: Optional[str] = None
+    unit: Optional[str] = None           # "mm/hr", "m", "fraction", "m3/s"
+    default_value: float = 0.0
+    min_value: Optional[float] = None
+    max_value: Optional[float] = None
     parents: List[str] = Field(default_factory=list)
     children: List[str] = Field(default_factory=list)
     structural_eq: Optional[str] = None   # human-readable structural equation
@@ -39,35 +56,104 @@ class CausalEdge(BaseModel):
     target: str
     weight: float = Field(ge=0.0, le=1.0)
     lag_hours: float = 0.0
+    lag_minutes: int = 0
     mechanism: Optional[str] = None       # "hydrological", "meteorological", "anthropogenic"
 
 
 class CausalDAG(BaseModel):
     """Complete causal directed acyclic graph."""
     dag_id: str = "beas_brahmaputra_v1"
+    basin_id: str = "brahmaputra_upper"
     nodes: List[CausalNode] = Field(default_factory=list)
     edges: List[CausalEdge] = Field(default_factory=list)
     created_at: datetime = Field(default_factory=lambda: datetime.now())
-    version: str = "1.0.0"
+    version: str = "2.0.0"
+
+
+# ══════════════════════════════════════════════════════════════════════════
+# Causal Engine — Intervention API Schemas
+# ══════════════════════════════════════════════════════════════════════════
+
+class InterventionSpec(BaseModel):
+    """Specification for a single intervention action."""
+    variable: str          # must be an INTERVENTION node in the DAG
+    value: float
+    unit: str = ""
 
 
 class InterventionRequest(BaseModel):
-    """do(X=x) intervention query."""
-    variable: str                         # variable to intervene on
-    value: float                          # fixed value
-    target_variables: List[str]           # variables to observe after intervention
+    """do(X=x) intervention query — Pearl's do-calculus."""
+    basin_id: str = "brahmaputra_upper"
+    intervention: Optional[InterventionSpec] = None
+    # Legacy flat fields (backward-compatible with existing code)
+    variable: str = ""                    # variable to intervene on
+    value: float = 0.0                    # fixed value
+    target_variable: str = "downstream_flood_depth"
+    target_variables: List[str] = Field(default_factory=list)
     village_id: Optional[str] = None
     context: Dict[str, float] = Field(default_factory=dict)
+    current_observations: Optional[Dict[str, float]] = None
+    n_monte_carlo: int = Field(default=100, ge=10, le=500)
+
+    @property
+    def effective_variable(self) -> str:
+        return self.intervention.variable if self.intervention else self.variable
+
+    @property
+    def effective_value(self) -> float:
+        return self.intervention.value if self.intervention else self.value
 
 
 class InterventionResult(BaseModel):
-    """Result of a causal intervention."""
-    intervention: InterventionRequest
+    """Result of a causal intervention — both legacy and enhanced formats."""
+    # Enhanced fields (Phase 2 Interventional Query API)
+    baseline_depth_m: float = 0.0
+    intervened_depth_m: float = 0.0
+    damage_reduction_pct: float = 0.0
+    confidence: float = Field(default=0.0, ge=0.0, le=1.0)
+    uncertainty_lower_m: float = 0.0
+    uncertainty_upper_m: float = 0.0
+    causal_pathway: List[str] = Field(default_factory=list)
+    recommendation: str = ""
+    time_sensitive_minutes: int = 0
+    time_sensitive_until: Optional[datetime] = None
+    # Legacy fields (backward-compatible)
+    intervention: Optional[InterventionRequest] = None
     original_values: Dict[str, float] = Field(default_factory=dict)
     counterfactual_values: Dict[str, float] = Field(default_factory=dict)
     causal_effects: Dict[str, float] = Field(default_factory=dict)   # ATE per target
-    confidence: float = 0.0
     timestamp: datetime = Field(default_factory=lambda: datetime.now())
+
+
+class CausalRiskResponse(BaseModel):
+    """Current causal risk score with contributing paths."""
+    basin_id: str
+    causal_risk_score: float = Field(ge=0.0, le=1.0)
+    risk_level: str = "LOW"   # LOW, MODERATE, HIGH, CRITICAL
+    top_contributing_nodes: List[Dict[str, Any]] = Field(default_factory=list)
+    top_causal_paths: List[List[str]] = Field(default_factory=list)
+    node_contributions: Dict[str, float] = Field(default_factory=dict)
+    timestamp: datetime = Field(default_factory=lambda: datetime.now())
+
+
+class DAGStructureResponse(BaseModel):
+    """DAG structure for dashboard visualization."""
+    basin_id: str
+    nodes: List[Dict[str, Any]] = Field(default_factory=list)
+    edges: List[Dict[str, Any]] = Field(default_factory=list)
+    intervention_nodes: List[str] = Field(default_factory=list)
+    outcome_nodes: List[str] = Field(default_factory=list)
+
+
+class InterventionOption(BaseModel):
+    """Available intervention node and its valid range."""
+    variable: str
+    node_type: str = "INTERVENTION"
+    unit: str = ""
+    min_value: float = 0.0
+    max_value: float = 1.0
+    default_value: float = 0.0
+    description: str = ""
 
 
 class CounterfactualQuery(BaseModel):
@@ -235,8 +321,57 @@ class EvacuationPlan(BaseModel):
 
 
 # ══════════════════════════════════════════════════════════════════════════
-# FloodLedger — Blockchain Oracle
+# FloodLedger — Blockchain Oracle (Parametric Insurance)
 # ══════════════════════════════════════════════════════════════════════════
+
+class FloodEvent(BaseModel):
+    """A confirmed flood event recorded on-chain."""
+    event_id: str
+    basin_id: str = "brahmaputra_upper"
+    flood_polygon_geojson: Optional[Dict[str, Any]] = None
+    flood_polygon_hash: str = ""  # keccak256 of GeoJSON polygon
+    confirmed_at: datetime = Field(default_factory=lambda: datetime.now())
+    satellite_confirmed: bool = False
+    severity: str = "WARNING"    # WARNING, SEVERE, EXTREME
+    tx_hash: Optional[str] = None  # blockchain transaction hash
+
+
+class PayoutRecord(BaseModel):
+    """Parametric insurance payout triggered by flood event."""
+    event_id: str
+    asset_id: str
+    asset_name: str = ""
+    amount_inr: float
+    insurer_id: str
+    triggered_at: datetime = Field(default_factory=lambda: datetime.now())
+    executed: bool = False
+    tx_hash: Optional[str] = None
+
+
+class IntersectedAsset(BaseModel):
+    """An insured asset within a flood polygon."""
+    asset_id: str
+    name: str
+    lat: float
+    lon: float
+    insured_value_inr: float
+    insurer_id: str
+
+
+class DemoTriggerRequest(BaseModel):
+    """Request body for the demo-trigger endpoint."""
+    basin_id: str = "brahmaputra_upper"
+    severity: str = "SEVERE"
+    satellite_confirmed: bool = True
+
+
+class DemoTriggerResponse(BaseModel):
+    """Response from demo-trigger with event + payouts."""
+    event: FloodEvent
+    intersected_assets: List[IntersectedAsset] = Field(default_factory=list)
+    payouts: List[PayoutRecord] = Field(default_factory=list)
+    total_payout_inr: float = 0.0
+
 
 class LedgerEntry(BaseModel):
     """An immutable ledger entry for a flood event."""

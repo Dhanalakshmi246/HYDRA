@@ -74,25 +74,45 @@ class Settings:
     CAUSAL_GNN_HIDDEN: int = int(os.getenv("CAUSAL_GNN_HIDDEN", "64"))
     CAUSAL_GNN_LAYERS: int = int(os.getenv("CAUSAL_GNN_LAYERS", "3"))
     CAUSAL_ENGINE_PORT: int = int(os.getenv("CAUSAL_ENGINE_PORT", "8007"))
+    CAUSAL_DAG_CONFIG_PATH: str = os.getenv("CAUSAL_DAG_CONFIG_PATH", "./data/dags/brahmaputra_dag.json")
+    CAUSAL_GNN_MODEL_PATH: str = os.getenv("CAUSAL_GNN_MODEL_PATH", "./models/causal_gnn_brahmaputra.pt")
+    N_MONTE_CARLO: int = int(os.getenv("N_MONTE_CARLO", "100"))
 
     # ── FloodLedger ──────────────────────────────────────────
     LEDGER_DB_PATH: str = os.getenv("LEDGER_DB_PATH", "./data/flood_ledger.db")
-    LEDGER_PORT: int = int(os.getenv("LEDGER_PORT", "8008"))
+    LEDGER_PORT: int = int(os.getenv("FLOOD_LEDGER_PORT", "8010"))
     LEDGER_DIFFICULTY: int = int(os.getenv("LEDGER_DIFFICULTY", "2"))  # PoW leading zeros
+    HARDHAT_RPC_URL: str = os.getenv("HARDHAT_RPC_URL", "http://localhost:8545")
+    ASSET_REGISTRY_PATH: str = os.getenv("ASSET_REGISTRY_PATH", "./data/insured_assets.csv")
+    CONTRACT_ADDRESS: str = os.getenv("CONTRACT_ADDRESS", "")
 
     # ── CHORUS ───────────────────────────────────────────────
-    CHORUS_PORT: int = int(os.getenv("CHORUS_PORT", "8009"))
+    CHORUS_PORT: int = int(os.getenv("CHORUS_PORT", "8008"))
     CHORUS_WINDOW_MIN: int = int(os.getenv("CHORUS_WINDOW_MIN", "60"))
     CHORUS_CREDIBILITY_THRESHOLD: float = float(os.getenv("CHORUS_CREDIBILITY_THRESHOLD", "0.3"))
+    CHORUS_CONSENSUS_THRESHOLD: int = int(os.getenv("CHORUS_CONSENSUS_THRESHOLD", "3"))
+    CHORUS_CONSENSUS_WINDOW_MIN: int = int(os.getenv("CHORUS_CONSENSUS_WINDOW_MIN", "10"))
     WHATSAPP_WEBHOOK_SECRET: str = os.getenv("WHATSAPP_WEBHOOK_SECRET", "")
+    TWILIO_ACCOUNT_SID: str = os.getenv("TWILIO_ACCOUNT_SID", "")
+    TWILIO_AUTH_TOKEN: str = os.getenv("TWILIO_AUTH_TOKEN", "")
+    TWILIO_WHATSAPP_NUMBER: str = os.getenv("TWILIO_WHATSAPP_NUMBER", "")
+    WHISPER_MODEL_SIZE: str = os.getenv("WHISPER_MODEL_SIZE", "base")
+    INDIC_BERT_CHECKPOINT: str = os.getenv("INDIC_BERT_CHECKPOINT", "ai4bharat/indic-bert")
+    GEOHASH_PRECISION: int = int(os.getenv("GEOHASH_PRECISION", "5"))
+    LANDMARK_DB_PATH: str = os.getenv("LANDMARK_DB_PATH", "./data/landmarks.csv")
 
     # ── Federated Learning ───────────────────────────────────
-    FL_SERVER_PORT: int = int(os.getenv("FL_SERVER_PORT", "8010"))
+    FL_SERVER_PORT: int = int(os.getenv("FL_SERVER_PORT", "8009"))
     FL_ROUNDS: int = int(os.getenv("FL_ROUNDS", "10"))
     FL_MIN_CLIENTS: int = int(os.getenv("FL_MIN_CLIENTS", "2"))
     FL_AGGREGATION: str = os.getenv("FL_AGGREGATION", "fedavg")
     FL_DP_EPSILON: float = float(os.getenv("FL_DP_EPSILON", "1.0"))
     FL_DP_DELTA: float = float(os.getenv("FL_DP_DELTA", "1e-5"))
+    FLOWER_SERVER_ADDRESS: str = os.getenv("FLOWER_SERVER_ADDRESS", "0.0.0.0:8080")
+    FEDERATED_ROUNDS: int = int(os.getenv("FEDERATED_ROUNDS", "10"))
+    DP_NOISE_MULTIPLIER: float = float(os.getenv("DP_NOISE_MULTIPLIER", "1.1"))
+    DP_CLIP_NORM: float = float(os.getenv("DP_CLIP_NORM", "1.0"))
+    SYNTHETIC_DATA_DIR: str = os.getenv("SYNTHETIC_DATA_DIR", "./data/synthetic")
 
     # ── Evacuation RL ────────────────────────────────────────
     EVAC_RL_PORT: int = int(os.getenv("EVAC_RL_PORT", "8011"))
@@ -103,6 +123,10 @@ class Settings:
     # ── MIRROR ───────────────────────────────────────────────
     MIRROR_PORT: int = int(os.getenv("MIRROR_PORT", "8012"))
     MIRROR_MAX_STEPS: int = int(os.getenv("MIRROR_MAX_STEPS", "48"))  # max replay steps
+
+    # ── TFT Deep Track ───────────────────────────────────────
+    TFT_CHECKPOINT_PATH: str = os.getenv("TFT_CHECKPOINT_PATH", "./models/tft_flood.ckpt")
+    TFT_ENABLED: bool = os.getenv("TFT_ENABLED", "true").lower() in ("true", "1", "yes")
 
     # ── General ──────────────────────────────────────────────
     SERVICE_HOST: str = os.getenv("SERVICE_HOST", "0.0.0.0")

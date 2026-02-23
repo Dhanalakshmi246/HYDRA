@@ -1,8 +1,11 @@
-"""CHORUS NLP — Keyword-based sentiment and flood-relevance analysis.
+"""CHORUS NLP — Unified message analysis pipeline.
 
-Lightweight classifier that works without heavy NLP models.
-Uses keyword dictionaries for Hindi/English flood terminology and
-a rule-based sentiment scorer.
+Combines IndicBERT classification, keyword sentiment, location
+extraction, and water-level detection into a single ``analyze_message``
+call that returns a ``CommunityReport``.
+
+This module is the backward-compatible entry point used by main.py.
+The heavy NLP components live in ``services/chorus/nlp/``.
 """
 
 from __future__ import annotations
@@ -18,7 +21,38 @@ from shared.models.phase2 import CommunityReport, SentimentLevel
 
 logger = structlog.get_logger(__name__)
 
-# ── Flood keyword dictionaries ──────────────────────────────────────────
+# ── Import sub-modules (fail gracefully) ─────────────────────────────
+try:
+    from services.chorus.nlp.indic_classifier import IndicFloodClassifier, FLOOD_RELEVANT
+except ImportError:
+    IndicFloodClassifier = None  # type: ignore[assignment,misc]
+    FLOOD_RELEVANT = set()
+
+try:
+    from services.chorus.nlp.location_extractor import LocationExtractor
+except ImportError:
+    LocationExtractor = None  # type: ignore[assignment,misc]
+
+# Singleton instances (lazy-init on first use)
+_classifier: Optional[IndicFloodClassifier] = None  # type: ignore[assignment]
+_location_extractor: Optional[LocationExtractor] = None  # type: ignore[assignment]
+
+
+def _get_classifier():
+    global _classifier
+    if _classifier is None and IndicFloodClassifier is not None:
+        _classifier = IndicFloodClassifier()
+    return _classifier
+
+
+def _get_location_extractor():
+    global _location_extractor
+    if _location_extractor is None and LocationExtractor is not None:
+        _location_extractor = LocationExtractor()
+    return _location_extractor
+
+
+# ── Flood keyword dictionaries (kept for backward compat) ───────────
 FLOOD_KEYWORDS_EN = {
     "flood", "flooding", "water level", "rising water", "overflow",
     "submerged", "inundated", "waterlogged", "embankment", "breach",
@@ -56,12 +90,18 @@ def _extract_keywords(text: str) -> List[str]:
     return found
 
 
-def _score_sentiment(text: str, keywords: List[str]) -> SentimentLevel:
-    """Rule-based sentiment classification."""
+def _score_sentiment(text: str, keywords: List[str], classification_label: Optional[str] = None) -> SentimentLevel:
+    """Rule-based sentiment classification, boosted by IndicBERT label."""
     text_lower = text.lower()
     panic_count = sum(1 for kw in PANIC_KEYWORDS if kw in text_lower)
     calm_count = sum(1 for kw in CALM_KEYWORDS if kw in text_lower)
     flood_intensity = len(keywords)
+
+    # Boost from IndicBERT classification
+    if classification_label in ("ACTIVE_FLOOD", "PEOPLE_STRANDED"):
+        panic_count += 2
+    elif classification_label in ("FLOOD_PRECURSOR", "INFRASTRUCTURE_FAILURE"):
+        flood_intensity += 2
 
     if panic_count >= 2 or (panic_count >= 1 and flood_intensity >= 3):
         return SentimentLevel.PANIC
@@ -85,7 +125,6 @@ def _extract_water_level(text: str) -> Optional[float]:
         match = re.search(pat, text.lower())
         if match:
             val = float(match.group(1))
-            # If in feet, convert to meters
             if "feet" in text.lower() or "ft" in text.lower():
                 val *= 0.3048
             return round(val, 2)
@@ -97,22 +136,21 @@ def _assess_credibility(
     keywords: List[str],
     source: str,
     has_location: bool,
+    classification_confidence: float = 0.0,
 ) -> float:
-    """Heuristic credibility score."""
-    score = 0.3  # base
-    # Longer messages with detail are more credible
+    """Heuristic credibility score, boosted by classifier confidence."""
+    score = 0.3
     if len(text) > 50:
         score += 0.1
     if len(text) > 150:
         score += 0.1
-    # Flood keywords boost credibility
     score += min(0.2, len(keywords) * 0.05)
-    # Named source types
     if source in ("field_worker", "government"):
         score += 0.2
-    # Location data
     if has_location:
         score += 0.1
+    # Boost from classifier confidence
+    score += classification_confidence * 0.1
     return min(1.0, round(score, 2))
 
 
@@ -124,13 +162,38 @@ def analyze_message(
     lat: Optional[float] = None,
     lon: Optional[float] = None,
 ) -> CommunityReport:
-    """Analyze a single community message and return a structured report."""
+    """Analyze a single community message and return a structured report.
+
+    Runs the full pipeline: IndicBERT → keywords → sentiment →
+    location → credibility → CommunityReport.
+    """
+    # Run IndicBERT classifier
+    classifier = _get_classifier()
+    classification = classifier.classify(message) if classifier else None
+    class_label = classification.label if classification else None
+    class_confidence = classification.confidence if classification else 0.0
+    is_flood = classification.is_flood_relevant if classification else False
+
+    # Keyword extraction
     keywords = _extract_keywords(message)
-    sentiment = _score_sentiment(message, keywords)
+    if classification and classification.label != "UNRELATED":
+        keywords.append(classification.label)
+
+    # Location extraction
+    loc_extractor = _get_location_extractor()
+    if loc_extractor and lat is None:
+        loc_result = loc_extractor.extract(message)
+        if loc_result.lat is not None and loc_result.confidence > 0.2:
+            lat = loc_result.lat
+            lon = loc_result.lon
+
+    sentiment = _score_sentiment(message, keywords, class_label)
     water_level = _extract_water_level(message)
-    flood_mentioned = len(keywords) > 0
+    flood_mentioned = len(keywords) > 0 or is_flood
     credibility = _assess_credibility(
-        message, keywords, source, has_location=(lat is not None)
+        message, keywords, source,
+        has_location=(lat is not None),
+        classification_confidence=class_confidence,
     )
 
     report = CommunityReport(

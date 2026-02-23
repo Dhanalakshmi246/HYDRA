@@ -5,5 +5,5 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 COPY shared/ shared/
 COPY services/flood_ledger/ services/flood_ledger/
-EXPOSE 8008
+EXPOSE 8010
 CMD ["python", "-m", "services.flood_ledger.main"]

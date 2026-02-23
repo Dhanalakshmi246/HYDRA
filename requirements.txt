@@ -49,11 +49,37 @@ playsound>=1.3,<2.0
 gymnasium>=0.29,<1.0
 # stable-baselines3>=2.2,<3.0  # optional — heuristic fallback exists
 
-# Federated Learning (uses numpy + torch)
-# No extra deps — base64 weight transport over HTTP
+# Federated Learning (Flower — base64 weight transport fallback over HTTP)
+# flwr already listed below in Phase 2 section
 
-# CHORUS NLP (keyword-based, no heavy NLP model needed)
-# No extra deps
+# CHORUS NLP (full Whisper + IndicBERT pipeline)
+# deps listed below in Phase 2 section
 
 # MIRROR hydrological sim (uses numpy + scipy)
 # No extra deps
+
+# Phase 2: Causal GNN (PyTorch Geometric)
+# torch-geometric>=2.5
+networkx>=3.2,<4.0
+
+# Phase 2: FloodLedger Oracle (blockchain)
+web3>=6.15,<7.0
+
+# Phase 2: Intersection detection (geospatial)
+shapely>=2.0,<3.0
+# geopandas>=0.14   # optional — heavy dependency
+
+# Phase 2: CHORUS NLP pipeline (Sabarish rewrite)
+# openai-whisper>=20231117   # optional — keyword fallback exists
+transformers>=4.37,<5.0     # IndicBERT classifier
+pygeohash>=2.0,<3.0         # geohash spatial binning
+python-multipart>=0.0.9     # form data parsing (Twilio webhook)
+# twilio>=9.0,<10.0         # optional — TwiML responses only need XML
+
+# Phase 2: Federated Learning (Flower framework)
+flwr>=1.7,<2.0              # Flower federated learning
+# grpcio>=1.60              # pulled in by flwr
+
+# Phase 2: TFT Deep Track (multi-horizon prediction)
+# pytorch-forecasting>=1.0  # optional — synthetic fallback exists
+# pytorch-lightning>=2.1    # optional — required for TFT checkpoint
