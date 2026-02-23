@@ -14,10 +14,10 @@
     "@deck.gl/layers": "^9.1.0",
     "@deck.gl/react": "^9.1.0",
     "axios": "^1.7.0",
-    "mapbox-gl": "^3.9.0",
+    "leaflet": "^1.9.4",
     "react": "^18.3.0",
     "react-dom": "^18.3.0",
-    "react-map-gl": "^8.1.0",
+    "react-leaflet": "^5.0.0",
     "recharts": "^2.15.0"
   },
   "devDependencies": {

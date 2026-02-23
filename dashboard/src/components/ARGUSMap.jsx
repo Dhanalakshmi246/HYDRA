@@ -1,147 +1,127 @@
-import { useState, useMemo, useCallback } from 'react'
-import Map from 'react-map-gl/mapbox'
-import DeckGL from '@deck.gl/react'
-import { ScatterplotLayer, PolygonLayer } from '@deck.gl/layers'
-import { HeatmapLayer } from '@deck.gl/aggregation-layers'
-import 'mapbox-gl/dist/mapbox-gl.css'
-
-import { riskColorRGBA, riskRadius } from '../utils/colorScale'
+/**
+ * ARGUSMap.jsx — Main ARGUS risk map
+ * Migrated: MapBox + DeckGL → Leaflet + OpenStreetMap
+ */
+import { useEffect } from 'react'
+import {
+  MapContainer, TileLayer, CircleMarker,
+  Popup, Tooltip, ZoomControl, useMap
+} from 'react-leaflet'
+import { TILE_LAYERS, ALERT_COLORS, DEFAULT_CENTER, DEFAULT_ZOOM } from './map/LeafletConfig'
+import './map/LeafletConfig'  // Ensures icon fix runs
 import VillagePopup from './VillagePopup'
 
-const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_TOKEN || ''
-
-// Initial view — centered between HP and Assam
-const INITIAL_VIEW = {
-  longitude: 85.5,
-  latitude: 29.0,
-  zoom: 5.2,
-  pitch: 45,
-  bearing: -15,
+// Risk radius helper (mirrors old riskRadius)
+const riskRadius = (score) => {
+  if (score >= 0.88) return 18
+  if (score >= 0.72) return 14
+  if (score >= 0.55) return 12
+  return 10
 }
 
-// Flood polygon overlay (simulated — Beas river corridor)
-const FLOOD_POLYGON = [
-  [
-    [76.9, 31.65],
-    [77.2, 31.65],
-    [77.25, 32.25],
-    [77.15, 32.3],
-    [76.85, 31.75],
-    [76.9, 31.65],
-  ],
-]
+// Alert level from risk score (mirrors old logic)
+const alertLevelFromScore = (score) => {
+  if (score >= 0.88) return 'EMERGENCY'
+  if (score >= 0.72) return 'WARNING'
+  if (score >= 0.55) return 'WATCH'
+  if (score >= 0.35) return 'ADVISORY'
+  return 'NORMAL'
+}
+
+// Auto-pans map when alert level changes to EMERGENCY
+const EmergencyPanner = ({ predictions }) => {
+  const map = useMap()
+  useEffect(() => {
+    const emergency = predictions.find(
+      (p) => (p.alert_level || alertLevelFromScore(p.risk_score)) === 'EMERGENCY'
+    )
+    if (emergency) {
+      map.flyTo([emergency.lat, emergency.lon], 12, { duration: 1.5 })
+    }
+  }, [predictions, map])
+  return null
+}
 
 export default function ARGUSMap({ predictions }) {
-  const [viewState, setViewState] = useState(INITIAL_VIEW)
-  const [selectedVillage, setSelectedVillage] = useState(null)
-
-  // ── Deck.gl layers ─────────────────────────────────────
-  const layers = useMemo(() => {
-    const hasEmergency = predictions.some(
-      (p) => p.alert_level === 'WARNING' || p.alert_level === 'EMERGENCY'
-    )
-
-    return [
-      // Heatmap underlay
-      new HeatmapLayer({
-        id: 'risk-heatmap',
-        data: predictions,
-        getPosition: (d) => [d.lon, d.lat],
-        getWeight: (d) => d.risk_score,
-        radiusPixels: 80,
-        intensity: 1.2,
-        threshold: 0.1,
-        colorRange: [
-          [34, 197, 94, 40],
-          [234, 179, 8, 80],
-          [249, 115, 22, 120],
-          [239, 68, 68, 160],
-          [220, 38, 38, 200],
-        ],
-        opacity: 0.4,
-      }),
-
-      // Flood polygon (only show during active alerts)
-      ...(hasEmergency
-        ? [
-            new PolygonLayer({
-              id: 'flood-polygon',
-              data: [{ polygon: FLOOD_POLYGON[0] }],
-              getPolygon: (d) => d.polygon,
-              getFillColor: [239, 68, 68, 50],
-              getLineColor: [239, 68, 68, 150],
-              lineWidthMinPixels: 2,
-              filled: true,
-              stroked: true,
-              opacity: 0.6,
-            }),
-          ]
-        : []),
-
-      // Village scatter dots
-      new ScatterplotLayer({
-        id: 'village-dots',
-        data: predictions,
-        getPosition: (d) => [d.lon, d.lat],
-        getRadius: (d) => riskRadius(d.risk_score),
-        getFillColor: (d) => riskColorRGBA(d.risk_score),
-        getLineColor: [255, 255, 255, 120],
-        lineWidthMinPixels: 1,
-        stroked: true,
-        filled: true,
-        radiusScale: 1,
-        radiusUnits: 'pixels',
-        pickable: true,
-        autoHighlight: true,
-        highlightColor: [0, 201, 255, 180],
-        onClick: ({ object }) => {
-          if (object) setSelectedVillage(object)
-        },
-        updateTriggers: {
-          getRadius: predictions.map((p) => p.risk_score),
-          getFillColor: predictions.map((p) => p.risk_score),
-        },
-      }),
-    ]
-  }, [predictions])
-
-  const handleClosePopup = useCallback(() => setSelectedVillage(null), [])
-
   return (
-    <div className="relative w-full h-full">
-      <DeckGL
-        viewState={viewState}
-        onViewStateChange={({ viewState: vs }) => setViewState(vs)}
-        controller={true}
-        layers={layers}
-        getCursor={({ isHovering }) => (isHovering ? 'pointer' : 'grab')}
+    <div className="relative w-full h-full" style={{ borderRadius: '12px', overflow: 'hidden' }}>
+      <MapContainer
+        center={DEFAULT_CENTER}
+        zoom={DEFAULT_ZOOM}
+        style={{ height: '100%', width: '100%' }}
+        zoomControl={false}
       >
-        {MAPBOX_TOKEN && (
-          <Map
-            mapboxAccessToken={MAPBOX_TOKEN}
-            mapStyle="mapbox://styles/mapbox/dark-v11"
-            attributionControl={false}
-          />
-        )}
+        {/* Dark CartoDB tiles — matches ARGUS dark theme */}
+        <TileLayer
+          url={TILE_LAYERS.dark.url}
+          attribution={TILE_LAYERS.dark.attribution}
+          maxZoom={TILE_LAYERS.dark.maxZoom}
+        />
 
-        {/* Fallback dark background when no Mapbox token */}
-        {!MAPBOX_TOKEN && (
-          <div className="absolute inset-0 bg-navy" />
-        )}
-      </DeckGL>
+        <ZoomControl position="bottomright" />
+        <EmergencyPanner predictions={predictions} />
 
-      {/* Village popup */}
-      {selectedVillage && (
-        <VillagePopup village={selectedVillage} onClose={handleClosePopup} />
-      )}
+        {predictions.map((village) => {
+          const level = village.alert_level || alertLevelFromScore(village.risk_score)
+          const colors = ALERT_COLORS[level] || ALERT_COLORS.NORMAL
+          const radius = riskRadius(village.risk_score)
 
-      {/* No-token banner */}
-      {!MAPBOX_TOKEN && (
-        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-navy-mid/90 backdrop-blur px-4 py-2 rounded-lg border border-accent/30 text-sm text-gray-400 font-body">
-          Set <code className="text-accent">VITE_MAPBOX_TOKEN</code> in{' '}
-          <code className="text-accent">.env</code> for map tiles
-        </div>
-      )}
+          return (
+            <CircleMarker
+              key={village.id || village.station_id}
+              center={[village.lat, village.lon]}
+              radius={radius}
+              pathOptions={{
+                fillColor:   colors.fill,
+                fillOpacity: 0.9,
+                color:       colors.border,
+                weight:      1.5,
+              }}
+            >
+              {/* Hover tooltip */}
+              <Tooltip
+                direction="top"
+                offset={[0, -radius]}
+                permanent={level === 'EMERGENCY'}
+              >
+                <div style={{ fontFamily: 'Exo 2, sans-serif', fontSize: '12px' }}>
+                  <strong style={{ color: colors.fill }}>{level}</strong>
+                  {' — '}{village.name}
+                </div>
+              </Tooltip>
+
+              {/* Click popup — full details */}
+              <Popup>
+                <div style={{
+                  fontFamily: 'Exo 2, sans-serif',
+                  minWidth: '180px',
+                  padding: '4px'
+                }}>
+                  <div style={{
+                    background: colors.fill,
+                    color: 'white',
+                    padding: '4px 8px',
+                    borderRadius: '4px',
+                    fontWeight: 'bold',
+                    marginBottom: '8px'
+                  }}>
+                    {level} — {village.name}
+                  </div>
+                  <div style={{ fontSize: '13px', lineHeight: '1.6' }}>
+                    <div>Risk Score: <strong>{Math.round(village.risk_score * 100)}%</strong></div>
+                    <div>Population: <strong>{village.population?.toLocaleString()}</strong></div>
+                    {village.explanation?.slice(0, 2).map((e, i) => (
+                      <div key={i} style={{ color: '#666', fontSize: '11px', marginTop: '4px' }}>
+                        ↑ {e.factor}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </Popup>
+            </CircleMarker>
+          )
+        })}
+      </MapContainer>
     </div>
   )
 }

@@ -53,8 +53,7 @@ body {
 ::-webkit-scrollbar-thumb { background: var(--color-navy-mid); border-radius: 3px; }
 ::-webkit-scrollbar-thumb:hover { background: var(--color-accent); }
 
-/* ── Mapbox overrides ────────────────────────────────── */
-.mapboxgl-ctrl-bottom-left,
-.mapboxgl-ctrl-bottom-right {
+/* ── Leaflet overrides ────────────────────────────────── */
+.leaflet-control-attribution {
   display: none !important;
 }

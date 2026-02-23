@@ -148,8 +148,9 @@ class Settings:
     # ── ScarNet — Satellite Terrain Monitor ──────────────────
     SCARNET_PORT: int = int(os.getenv("SCARNET_PORT", "8012"))
     SCARNET_DEMO_MODE: bool = os.getenv("SCARNET_DEMO_MODE", "true").lower() in ("true", "1", "yes")
-    COPERNICUS_CLIENT_ID: str = os.getenv("COPERNICUS_CLIENT_ID", "")
-    COPERNICUS_CLIENT_SECRET: str = os.getenv("COPERNICUS_CLIENT_SECRET", "")
+    NASA_EARTHDATA_TOKEN: str = os.getenv("NASA_EARTHDATA_TOKEN", "")
+    SENTINEL_AWS_BUCKET: str = os.getenv("SENTINEL_AWS_BUCKET", "sentinel-s2-l2a")
+    SENTINEL_AWS_REGION: str = os.getenv("SENTINEL_AWS_REGION", "eu-central-1")
     UNET_CHECKPOINT: str = os.getenv("UNET_CHECKPOINT", "./models/unet_change_detect.pt")
     SENTINEL2_BEFORE_TILE: str = os.getenv("SENTINEL2_BEFORE_TILE", "./data/sentinel2/beas_valley_2022_08_before.tif")
     SENTINEL2_AFTER_TILE: str = os.getenv("SENTINEL2_AFTER_TILE", "./data/sentinel2/beas_valley_2023_09_after.tif")

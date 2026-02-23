@@ -1,10 +1,14 @@
 """Sentinel-1/2 satellite imagery client.
 
-Provides access to Copernicus Data Space Ecosystem (free) for
-Sentinel-2 multispectral (10m, 13 bands, 5-day revisit) and
+Provides access to Sentinel-2 multispectral (10m, 13 bands, 5-day revisit) and
 Sentinel-1 SAR (cloud-penetrating, 6-12 day revisit) imagery.
 
-In demo mode: returns paths to pre-generated synthetic tiles.
+Data Sources (priority order):
+  1. DEMO_MODE (default)  - synthetic GeoTIFF tiles, always works offline
+  2. NASA Earthdata       - HLSL30 (Harmonized Landsat-Sentinel, 30m, free token)
+  3. AWS Open Data        - sentinel-s2-l2a S3 bucket (no auth, requester-pays)
+
+No Copernicus / MapBox dependencies.
 """
 
 from __future__ import annotations
@@ -22,63 +26,74 @@ logger = structlog.get_logger(__name__)
 _DATA_DIR = Path(__file__).resolve().parent.parent / "data"
 _SENTINEL2_DIR = Path(__file__).resolve().parent.parent.parent.parent / "data" / "sentinel2"
 
+# NASA Earthdata endpoints
+NASA_EARTHDATA_TOKEN_URL = "https://urs.earthdata.nasa.gov/api/users/token"
+NASA_CMR_SEARCH_URL = "https://cmr.earthdata.nasa.gov/search/granules.json"
+NASA_HLSL30_COLLECTION = "C2021957657-LPCLOUD"
+
+# AWS Open Data Sentinel-2 bucket
+AWS_SENTINEL2_BUCKET = "sentinel-s2-l2a"
+AWS_SENTINEL2_REGION = "eu-central-1"
+
 
 class SentinelClient:
-    """Client for Copernicus Sentinel-1/2 satellite imagery.
+    """Client for Sentinel-1/2 satellite imagery.
 
-    Downloads Sentinel-1/2 tiles from Copernicus Data Space Ecosystem (free API).
-    - Sentinel-2: 10m resolution, 13 spectral bands, 5-day revisit
-    - Sentinel-1: SAR, sees through clouds/darkness, 6-12 day revisit
+    Supports three data sources in priority order:
+      1. Demo mode   - pre-generated synthetic tiles (default, offline-safe)
+      2. NASA Earthdata - free HLSL30 data via CMR API
+      3. AWS Open Data  - Sentinel-2 L2A from public S3 bucket
 
     In demo mode, returns pre-generated synthetic tiles.
     """
 
-    BASE_URL = "https://dataspace.copernicus.eu/odata/v1"
-
     def __init__(
         self,
-        client_id: str = "",
-        client_secret: str = "",
+        nasa_token: str = "",
+        aws_bucket: str = AWS_SENTINEL2_BUCKET,
         demo_mode: bool = True,
     ):
         self.demo_mode = demo_mode
-        self.client_id = client_id
-        self.client_secret = client_secret
-        self.token: Optional[str] = None
+        self.nasa_token = nasa_token
+        self.aws_bucket = aws_bucket
+        self.session_token: Optional[str] = None
 
-        if not demo_mode and client_id and client_secret:
+        if not demo_mode and nasa_token:
             try:
-                self.token = self._get_access_token(client_id, client_secret)
-                logger.info("sentinel_authenticated", api="copernicus")
+                self._validate_nasa_token(nasa_token)
+                logger.info("sentinel_authenticated", api="nasa_earthdata")
             except Exception as e:
                 logger.warning("sentinel_auth_failed", error=str(e))
                 self.demo_mode = True
         else:
             logger.info("sentinel_demo_mode", reason="no credentials or demo_mode=True")
 
-    # ── Authentication ───────────────────────────────────────────────────
+    # -- Authentication -------------------------------------------------------
 
-    def _get_access_token(self, client_id: str, client_secret: str) -> str:
-        """Obtain OAuth2 token from Copernicus Data Space."""
+    def _validate_nasa_token(self, token: str) -> None:
+        """Validate NASA Earthdata bearer token.
+
+        Tokens are created at https://urs.earthdata.nasa.gov and are
+        long-lived (90 days). We just verify we can hit the CMR API.
+        """
         try:
             import httpx
 
-            resp = httpx.post(
-                "https://identity.dataspace.copernicus.eu/auth/realms/"
-                "CDSE/protocol/openid-connect/token",
-                data={
-                    "grant_type": "client_credentials",
-                    "client_id": client_id,
-                    "client_secret": client_secret,
+            resp = httpx.get(
+                NASA_CMR_SEARCH_URL,
+                params={
+                    "collection_concept_id": NASA_HLSL30_COLLECTION,
+                    "page_size": 1,
                 },
+                headers={"Authorization": f"Bearer {token}"},
                 timeout=10.0,
             )
             resp.raise_for_status()
-            return resp.json()["access_token"]
+            self.session_token = token
         except Exception as e:
-            raise RuntimeError(f"Copernicus auth failed: {e}") from e
+            raise RuntimeError(f"NASA Earthdata auth failed: {e}") from e
 
-    # ── Download Methods ─────────────────────────────────────────────────
+    # -- Download Methods ------------------------------------------------------
 
     def download_sentinel2_tile(
         self,
@@ -89,21 +104,32 @@ class SentinelClient:
     ) -> Optional[str]:
         """Download least-cloudy Sentinel-2 L2A tile for bbox and date range.
 
+        Priority: Demo tiles -> NASA HLSL30 -> AWS S3 Open Data.
+
         Returns: local file path to downloaded tile (or None if unavailable).
         """
         if self.demo_mode:
             logger.info("sentinel2_demo_download", bbox=bbox)
             return str(self._get_demo_before_path())
 
-        # Production: query Copernicus OData API
-        logger.info(
-            "sentinel2_download",
+        # Try NASA Earthdata CMR search
+        if self.session_token:
+            result = self._search_nasa_hlsl30(bbox, date_from, date_to, max_cloud_pct)
+            if result:
+                return result
+
+        # Fallback: AWS Open Data S3
+        result = self._search_aws_sentinel2(bbox, date_from, date_to)
+        if result:
+            return result
+
+        logger.warning(
+            "sentinel2_no_data",
             bbox=bbox,
             date_from=date_from.isoformat(),
             date_to=date_to.isoformat(),
-            max_cloud=max_cloud_pct,
         )
-        return None  # Placeholder for real implementation
+        return None
 
     def download_sentinel1_sar(
         self, bbox: tuple, date: datetime
@@ -120,7 +146,141 @@ class SentinelClient:
         logger.info("sentinel1_download", bbox=bbox, date=date.isoformat())
         return None
 
-    # ── Demo Tiles ───────────────────────────────────────────────────────
+    # -- NASA Earthdata Methods ------------------------------------------------
+
+    def _search_nasa_hlsl30(
+        self,
+        bbox: tuple,
+        date_from: datetime,
+        date_to: datetime,
+        max_cloud_pct: float = 20.0,
+    ) -> Optional[str]:
+        """Search NASA CMR for HLSL30 (Harmonized Landsat-Sentinel) granules.
+
+        Args:
+            bbox: (west, south, east, north) in EPSG:4326
+            date_from: start of temporal window
+            date_to: end of temporal window
+            max_cloud_pct: maximum cloud cover percentage
+
+        Returns: local path to downloaded tile, or None.
+        """
+        try:
+            import httpx
+
+            west, south, east, north = bbox
+            temporal = (
+                f"{date_from.strftime('%Y-%m-%dT00:00:00Z')},"
+                f"{date_to.strftime('%Y-%m-%dT23:59:59Z')}"
+            )
+
+            resp = httpx.get(
+                NASA_CMR_SEARCH_URL,
+                params={
+                    "collection_concept_id": NASA_HLSL30_COLLECTION,
+                    "bounding_box": f"{west},{south},{east},{north}",
+                    "temporal": temporal,
+                    "cloud_cover": f"0,{max_cloud_pct}",
+                    "sort_key": "cloud_cover",
+                    "page_size": 5,
+                },
+                headers={"Authorization": f"Bearer {self.session_token}"},
+                timeout=15.0,
+            )
+            resp.raise_for_status()
+            entries = resp.json().get("feed", {}).get("entry", [])
+
+            if not entries:
+                logger.info("nasa_hlsl30_no_results", bbox=bbox)
+                return None
+
+            # Pick best granule (lowest cloud cover, first in sorted results)
+            granule = entries[0]
+            download_url = None
+            for link in granule.get("links", []):
+                if link.get("rel") == "http://esipfed.org/ns/fedsearch/1.1/data#":
+                    download_url = link["href"]
+                    break
+
+            if download_url:
+                logger.info(
+                    "nasa_hlsl30_found",
+                    granule_id=granule.get("id"),
+                    cloud_cover=granule.get("cloud_cover"),
+                    url=download_url,
+                )
+                return self._download_granule(download_url)
+
+            return None
+
+        except Exception as e:
+            logger.warning("nasa_hlsl30_search_failed", error=str(e))
+            return None
+
+    def _download_granule(self, url: str) -> Optional[str]:
+        """Download a granule from NASA Earthdata to local cache."""
+        try:
+            import httpx
+
+            cache_dir = _SENTINEL2_DIR / "cache"
+            cache_dir.mkdir(parents=True, exist_ok=True)
+
+            filename = url.split("/")[-1]
+            local_path = cache_dir / filename
+
+            if local_path.exists():
+                logger.info("granule_cached", path=str(local_path))
+                return str(local_path)
+
+            resp = httpx.get(
+                url,
+                headers={"Authorization": f"Bearer {self.session_token}"},
+                timeout=60.0,
+                follow_redirects=True,
+            )
+            resp.raise_for_status()
+
+            local_path.write_bytes(resp.content)
+            logger.info("granule_downloaded", path=str(local_path), size=len(resp.content))
+            return str(local_path)
+
+        except Exception as e:
+            logger.warning("granule_download_failed", url=url, error=str(e))
+            return None
+
+    # -- AWS Open Data Methods -------------------------------------------------
+
+    def _search_aws_sentinel2(
+        self,
+        bbox: tuple,
+        date_from: datetime,
+        date_to: datetime,
+    ) -> Optional[str]:
+        """Search AWS Open Data Sentinel-2 L2A bucket.
+
+        The sentinel-s2-l2a bucket is organized as:
+          s3://sentinel-s2-l2a/tiles/{utm_zone}/{lat_band}/{grid_sq}/{year}/{month}/{day}/
+
+        No authentication required (requester-pays).
+
+        Returns: local path to downloaded tile, or None.
+        """
+        try:
+            logger.info(
+                "aws_sentinel2_search",
+                bucket=self.aws_bucket,
+                bbox=bbox,
+                date_from=date_from.isoformat(),
+            )
+            # AWS S3 listing would require boto3 - for now log intent
+            # Full implementation would use boto3 to list and download
+            return None
+
+        except Exception as e:
+            logger.warning("aws_sentinel2_search_failed", error=str(e))
+            return None
+
+    # -- Demo Tiles ------------------------------------------------------------
 
     def get_demo_tiles(self) -> dict:
         """Return paths to pre-generated demo tiles (Beas Valley, Himachal Pradesh).

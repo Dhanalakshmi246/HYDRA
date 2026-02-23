@@ -96,6 +96,26 @@ registerRoute(
   }),
 );
 
+/* ── Map tile caching (OSM / CartoDB / ESRI — offline maps) ── */
+
+// Cache map tiles for offline use — CacheFirst with 7-day expiry
+registerRoute(
+  ({ url }) =>
+    url.hostname.includes('tile.openstreetmap.org') ||
+    url.hostname.includes('basemaps.cartocdn.com') ||
+    url.hostname.includes('arcgisonline.com') ||
+    url.hostname.includes('tile.opentopomap.org'),
+  new CacheFirst({
+    cacheName: 'map-tiles-cache',
+    plugins: [
+      new ExpirationPlugin({
+        maxEntries: 500,
+        maxAgeSeconds: 7 * 24 * 3600, // 7 days
+      }),
+    ],
+  }),
+);
+
 /* ── Push notification handler ──────────────────────────── */
 
 const VIBRATE_PATTERNS = {

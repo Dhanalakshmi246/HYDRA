@@ -191,7 +191,7 @@ export default function EvacuationMap({ selectedVillage = 'kullu_01', riskScore 
           <div className="text-center">
             <div className="text-6xl mb-4">🗺️</div>
             <div className="text-gray-400 text-sm font-display tracking-wider">EVACUATION MAP</div>
-            <div className="text-gray-600 text-xs mt-2">MapBox GL integration — routes, vehicles, shelters</div>
+            <div className="text-gray-600 text-xs mt-2">Leaflet + OpenStreetMap — routes, vehicles, shelters</div>
             {plan && (
               <div className="mt-4 grid grid-cols-2 gap-3 max-w-sm mx-auto">
                 {plan.assignments?.map((a, i) => (

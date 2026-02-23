@@ -50,11 +50,6 @@ spec:
                 configMapKeyRef:
                   name: argus-config
                   key: redis_url
-            - name: MAPBOX_TOKEN
-              valueFrom:
-                secretKeyRef:
-                  name: argus-secrets
-                  key: mapbox_token
             - name: DQN_MODEL_PATH
               value: "/models/dqn_evacuation.pt"
             - name: DEMO_MODE
@@ -161,16 +156,13 @@ spec:
                 configMapKeyRef:
                   name: argus-config
                   key: redis_url
-            - name: COPERNICUS_CLIENT_ID
+            - name: SCARNET_DEMO_MODE
+              value: "true"
+            - name: NASA_EARTHDATA_TOKEN
               valueFrom:
                 secretKeyRef:
                   name: argus-secrets
-                  key: copernicus_client_id
-            - name: COPERNICUS_CLIENT_SECRET
-              valueFrom:
-                secretKeyRef:
-                  name: argus-secrets
-                  key: copernicus_client_secret
+                  key: nasa_earthdata_token
             - name: SIMULATION_TIMESTEP
               value: "900"
             - name: DEMO_MODE
@@ -272,16 +264,15 @@ spec:
                 configMapKeyRef:
                   name: argus-config
                   key: kafka_bootstrap_servers
-            - name: COPERNICUS_CLIENT_ID
+            - name: SCARNET_DEMO_MODE
+              value: "true"
+            - name: NASA_EARTHDATA_TOKEN
               valueFrom:
                 secretKeyRef:
                   name: argus-secrets
-                  key: copernicus_client_id
-            - name: COPERNICUS_CLIENT_SECRET
-              valueFrom:
-                secretKeyRef:
-                  name: argus-secrets
-                  key: copernicus_client_secret
+                  key: nasa_earthdata_token
+            - name: SENTINEL_AWS_BUCKET
+              value: "sentinel-s2-l2a"
             - name: SCARNET_MODEL_PATH
               value: "/models/scarnet_unet.pt"
             - name: DEMO_MODE

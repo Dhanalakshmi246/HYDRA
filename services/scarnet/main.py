@@ -32,8 +32,8 @@ logger = structlog.get_logger(__name__)
 SCARNET_PORT = int(os.getenv("SCARNET_PORT", "8012"))
 DEMO_MODE = os.getenv("SCARNET_DEMO_MODE", "true").lower() in ("true", "1", "yes")
 UNET_CHECKPOINT = os.getenv("UNET_CHECKPOINT", "./models/unet_change_detect.pt")
-COPERNICUS_CLIENT_ID = os.getenv("COPERNICUS_CLIENT_ID", "")
-COPERNICUS_CLIENT_SECRET = os.getenv("COPERNICUS_CLIENT_SECRET", "")
+NASA_EARTHDATA_TOKEN = os.getenv("NASA_EARTHDATA_TOKEN", "")
+SENTINEL_AWS_BUCKET = os.getenv("SENTINEL_AWS_BUCKET", "sentinel-s2-l2a")
 
 # ── Globals ──────────────────────────────────────────────────────────────
 _scheduler: ScanScheduler | None = None
@@ -47,8 +47,8 @@ async def lifespan(app: FastAPI):
 
     # Initialize components
     sentinel_client = SentinelClient(
-        client_id=COPERNICUS_CLIENT_ID,
-        client_secret=COPERNICUS_CLIENT_SECRET,
+        nasa_token=NASA_EARTHDATA_TOKEN,
+        aws_bucket=SENTINEL_AWS_BUCKET,
         demo_mode=DEMO_MODE,
     )
 
