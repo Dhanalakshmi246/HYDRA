@@ -139,7 +139,7 @@ services:
       context: .
       dockerfile: services/acn_node/Dockerfile
     ports:
-      - "8012:8012"
+      - "8016:8016"
     env_file: .env
     environment:
       KAFKA_BOOTSTRAP_SERVERS: kafka:29092
@@ -190,39 +190,25 @@ services:
     depends_on:
       - kafka
 
-  # ── Phase 2: Sabarish — Causal Engine ────────────────────
-  causal_engine:
+  # ── Sabarish — Model Monitor (Phase 3) ──────────────────
+  model_monitor:
     build:
       context: .
-      dockerfile: services/causal_engine/Dockerfile
+      dockerfile: services/model_monitor/Dockerfile
     ports:
-      - "8007:8007"
+      - "8014:8014"
     env_file: .env
     environment:
+      MODEL_MONITOR_PORT: "8014"
+      DEMO_MODE: "true"
       SERVICE_HOST: "0.0.0.0"
-      CAUSAL_ENGINE_PORT: "8007"
-      CAUSAL_DAG_PATH: ./shared/causal_dag/dag.json
-    depends_on:
-      - kafka
-
-  # ── Phase 2: Sabarish — FloodLedger (Blockchain) ───────
-  flood_ledger:
-    build:
-      context: .
-      dockerfile: services/flood_ledger/Dockerfile
-    ports:
-      - "8010:8010"
-    env_file: .env
-    environment:
-      SERVICE_HOST: "0.0.0.0"
-      LEDGER_PORT: "8010"
-      LEDGER_DB_PATH: /app/data/ledger.db
     volumes:
       - ./data:/app/data
+      - ./models:/app/models
     depends_on:
-      - kafka
+      - prediction
 
-  # ── Phase 2: Sabarish — CHORUS Community Intelligence ──
+  # ── Sabarish — CHORUS Community Intelligence ────────────
   chorus:
     build:
       context: .
@@ -264,21 +250,21 @@ services:
     depends_on:
       - kafka
 
-  # ── Phase 2: Dhana — Evacuation RL ─────────────────────
+  # ── Dhana — Evacuation RL ───────────────────────────────
   evacuation_rl:
     build:
       context: .
       dockerfile: services/evacuation_rl/Dockerfile
     ports:
-      - "8011:8011"
+      - "8010:8010"
     env_file: .env
     environment:
       SERVICE_HOST: "0.0.0.0"
-      EVAC_RL_PORT: "8011"
+      EVAC_RL_PORT: "8010"
     depends_on:
       - kafka
 
-  # ── Phase 2: Dhana — MIRROR Counterfactual Replay ──────
+  # ── Dhana — MIRROR Counterfactual Replay ────────────────
   mirror:
     build:
       context: .
@@ -289,10 +275,12 @@ services:
     environment:
       SERVICE_HOST: "0.0.0.0"
       MIRROR_PORT: "8012"
+    volumes:
+      - ./data:/app/data
     depends_on:
       - kafka
 
-  # ── Phase 3: Rogesh — ScarNet Terrain Monitor ─────────
+  # ── Rogesh — ScarNet Terrain Monitor ────────────────────
   scarnet:
     build:
       context: .
@@ -310,7 +298,7 @@ services:
     depends_on:
       - kafka
 
-  # ── Phase 3: Rogesh — API Gateway ─────────────────────
+  # ── Rogesh — API Gateway ────────────────────────────────
   api_gateway:
     build:
       context: .

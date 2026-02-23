@@ -47,6 +47,7 @@ SERVICES = {
     "evacuation":   "http://localhost:8011",
     "mirror":       "http://localhost:8012",
     "scarnet":      "http://localhost:8013",
+    "model_monitor": "http://localhost:8014",
 }
 
 # Route prefix → service mapping (for reverse proxy)
@@ -68,6 +69,7 @@ ROUTE_MAP = {
     "/api/v1/evacuation":  "evacuation",
     "/api/v1/mirror":      "mirror",
     "/api/v1/scarnet":     "scarnet",
+    "/api/v1/monitor":     "model_monitor",
 }
 
 
@@ -134,7 +136,7 @@ app = FastAPI(
     description=(
         "Unified entry point for all ARGUS services. "
         "Provides cached dashboard snapshot, aggregated health check, "
-        "and reverse proxy to all 13 backend services."
+        "and reverse proxy to all 14 backend services."
     ),
     version="3.0.0",
     lifespan=lifespan,
@@ -172,6 +174,7 @@ async def get_dashboard_snapshot():
             _fetch(client, f"{SERVICES['scarnet']}/api/v1/scarnet/latest"),
             _fetch(client, f"{SERVICES['mirror']}/api/v1/mirror/events"),
             _fetch(client, f"{SERVICES['federated']}/api/v1/fl/status"),
+            _fetch(client, f"{SERVICES['model_monitor']}/api/v1/monitor/drift-report"),
         )
 
     snapshot = {
@@ -184,6 +187,7 @@ async def get_dashboard_snapshot():
         "scarnet_latest":  _safe_json(results[6]),
         "mirror_events":   _safe_json(results[7]),
         "federated_status": _safe_json(results[8]),
+        "model_drift":     _safe_json(results[9]),
         "snapshot_at":     datetime.now(timezone.utc).isoformat(),
         "services_queried": len(results),
         "services_up": sum(1 for r in results if not isinstance(r, Exception) and r.status_code == 200),
@@ -197,7 +201,7 @@ async def get_dashboard_snapshot():
 
 @app.get("/health")
 async def aggregate_health():
-    """Ping all 13 services and return unified health status.
+    """Ping all 14 services and return unified health status.
 
     Used by the SystemHealth dashboard widget and pre-demo checks.
     """

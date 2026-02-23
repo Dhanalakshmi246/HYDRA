@@ -1,7 +1,7 @@
 #!/bin/bash
 # ══════════════════════════════════════════════════════════════
 # ARGUS — Start All Services
-# Starts infrastructure + all 13 services + dashboard
+# Starts infrastructure + all 14 services + dashboard
 # ══════════════════════════════════════════════════════════════
 
 set -e
@@ -82,9 +82,10 @@ ok "Phase 2 services running (ports 8006-8012)"
 # ── Step 4: Phase 3 services ────────────────────────────
 log "Phase 3 — Integration Layer"
 start_service "ScarNet"          "services.scarnet.main:app"          8013
+start_service "Model Monitor"    "services.model_monitor.main:app"    8014
 sleep 1
 start_service "API Gateway"      "services.api_gateway.main:app"      8000
-ok "Phase 3 services running (ports 8000, 8013)"
+ok "Phase 3 services running (ports 8000, 8013-8014)"
 
 # ── Step 5: Dashboard ───────────────────────────────────
 log "Starting Dashboard..."
@@ -114,7 +115,7 @@ echo "  Health:       http://localhost:8000/health"
 echo ""
 echo "  Phase 1:  8001-8005  (Ingestion → Alerts)"
 echo "  Phase 2:  8006-8012  (ACN → MIRROR)"
-echo "  Phase 3:  8000,8013  (Gateway, ScarNet)"
+echo "  Phase 3:  8000,8013-8014  (Gateway, ScarNet, Model Monitor)"
 echo "════════════════════════════════════════════════════════"
 echo ""
 echo "Press Ctrl+C to stop all services."

@@ -115,7 +115,7 @@ class Settings:
     SYNTHETIC_DATA_DIR: str = os.getenv("SYNTHETIC_DATA_DIR", "./data/synthetic")
 
     # ── Evacuation RL ────────────────────────────────────────
-    EVAC_RL_PORT: int = int(os.getenv("EVAC_RL_PORT", "8011"))
+    EVAC_RL_PORT: int = int(os.getenv("EVAC_RL_PORT", "8010"))
     EVAC_MODEL_PATH: str = os.getenv("EVAC_MODEL_PATH", "./models/evac_ppo.zip")
     EVAC_GRAPH_PATH: str = os.getenv("EVAC_GRAPH_PATH", "./data/evacuation_graph.json")
     EVAC_RETRAIN_INTERVAL_S: int = int(os.getenv("EVAC_RETRAIN_INTERVAL_S", "3600"))
@@ -123,6 +123,21 @@ class Settings:
     # ── MIRROR ───────────────────────────────────────────────
     MIRROR_PORT: int = int(os.getenv("MIRROR_PORT", "8012"))
     MIRROR_MAX_STEPS: int = int(os.getenv("MIRROR_MAX_STEPS", "48"))  # max replay steps
+
+    # ═══════════════════════  PHASE 3  ════════════════════════
+
+    # ── Model Monitor ────────────────────────────────────────
+    MODEL_MONITOR_PORT: int = int(os.getenv("MODEL_MONITOR_PORT", "8014"))
+    DRIFT_CHECK_INTERVAL_S: int = int(os.getenv("DRIFT_CHECK_INTERVAL_S", "3600"))
+    DRIFT_RETRAIN_THRESHOLD: float = float(os.getenv("DRIFT_RETRAIN_THRESHOLD", "0.3"))
+
+    # ── MLflow (optional) ────────────────────────────────────
+    MLFLOW_TRACKING_URI: str = os.getenv("MLFLOW_TRACKING_URI", "")
+    MLFLOW_EXPERIMENT: str = os.getenv("MLFLOW_EXPERIMENT", "argus-flood")
+
+    # ── GAN Synthetic Data ───────────────────────────────────
+    GAN_CHECKPOINT_PATH: str = os.getenv("GAN_CHECKPOINT_PATH", "./models/flood_gan.pt")
+    SYNTHETIC_DATA_PATH: str = os.getenv("SYNTHETIC_DATA_PATH", "./data/synthetic/brahmaputra_500.parquet")
 
     # ── TFT Deep Track ───────────────────────────────────────
     TFT_CHECKPOINT_PATH: str = os.getenv("TFT_CHECKPOINT_PATH", "./models/tft_flood.ckpt")

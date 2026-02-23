@@ -21,8 +21,9 @@ export default defineConfig({
       '/api/v1/ledger': { target: 'http://localhost:8010', changeOrigin: true },
       '/api/v1/evacuation': { target: 'http://localhost:8011', changeOrigin: true },
       '/api/v1/mirror': { target: 'http://localhost:8012', changeOrigin: true },
-      // Phase 3 — ScarNet + API Gateway
+      // Phase 3 — ScarNet + Model Monitor + API Gateway
       '/api/v1/scarnet': { target: 'http://localhost:8013', changeOrigin: true },
+      '/api/v1/monitor': { target: 'http://localhost:8014', changeOrigin: true },
       '/api/v1/dashboard': { target: 'http://localhost:8000', changeOrigin: true },
       // Fallback
       '/api': { target: 'http://localhost:8004', changeOrigin: true },

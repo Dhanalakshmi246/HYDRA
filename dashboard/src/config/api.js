@@ -48,6 +48,12 @@ const API = Object.freeze({
   // API Gateway aggregated endpoints
   dashboardSnapshot: '/api/v1/dashboard/snapshot',
   gatewayHealth:     '/api/v1/dashboard/health',
+
+  // Model Monitor
+  monitorDrift:      '/api/v1/monitor/drift-report',
+  monitorAccuracy:   '/api/v1/monitor/accuracy-history',
+  monitorRetrain:    '/api/v1/monitor/retrain',
+  monitorHealth:     '/api/v1/monitor/health',
 })
 
 export default API

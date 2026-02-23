@@ -30,6 +30,7 @@ SERVICES = {
     "Evacuation RL":    {"url": "http://localhost:8011", "phase": 2},
     "MIRROR":           {"url": "http://localhost:8012", "phase": 2},
     "ScarNet":          {"url": "http://localhost:8013", "phase": 3},
+    "Model Monitor":    {"url": "http://localhost:8014", "phase": 3},
     "API Gateway":      {"url": "http://localhost:8000", "phase": 3},
 }
 
