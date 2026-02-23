@@ -22,5 +22,11 @@ scikit-learn>=1.4,<2.0
 # segment-anything
 # opencv-python>=4.9
 
-# PINN (Phase 2 — full PyTorch)
-# torch>=2.2
+# PINN / Virtual Sensor Mesh
+torch>=2.2,<3.0
+
+# TimescaleDB / PostgreSQL
+asyncpg>=0.29,<1.0
+
+# Signal processing
+scipy>=1.12,<2.0

@@ -49,7 +49,13 @@ class Settings:
     FEATURE_WINDOW_3H: int = int(os.getenv("FEATURE_WINDOW_3H", "36"))
     FEATURE_WINDOW_6H: int = int(os.getenv("FEATURE_WINDOW_6H", "72"))
     FEATURE_WINDOW_24H: int = int(os.getenv("FEATURE_WINDOW_24H", "288"))
+    # ── TimescaleDB ──────────────────────────────────────
+    TIMESCALEDB_DSN: str = os.getenv(
+        "TIMESCALEDB_DSN", "postgresql://argus:argus@localhost:5432/argus"
+    )
 
+    # ── PINN ─────────────────────────────────────────────
+    PINN_CHECKPOINT_PATH: str = os.getenv("PINN_CHECKPOINT_PATH", "./models/pinn_beas_river.pt")
     # ── Alert Dispatcher ─────────────────────────────────────
     ALERT_KAFKA_TOPIC: str = os.getenv("ALERT_KAFKA_TOPIC", "alerts.dispatch")
     ALERT_COOLDOWN_S: int = int(os.getenv("ALERT_COOLDOWN_S", "900"))  # 15 min

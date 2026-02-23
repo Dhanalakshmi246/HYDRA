@@ -57,6 +57,18 @@ services:
       - kafka
       - ingestion
 
+  # ── TimescaleDB (PostgreSQL + TimescaleDB extension) ───
+  timescaledb:
+    image: timescale/timescaledb:latest-pg16
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: argus
+      POSTGRES_PASSWORD: argus
+      POSTGRES_DB: argus
+    volumes:
+      - timescale_data:/var/lib/postgresql/data
+
   # ── Sabarish — Feature Engine ──────────────────────────
   feature_engine:
     build:
@@ -67,10 +79,13 @@ services:
     env_file: .env
     environment:
       KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+      TIMESCALEDB_DSN: postgresql://argus:argus@timescaledb:5432/argus
+      PINN_CHECKPOINT_PATH: ./models/pinn_beas_river.pt
       SERVICE_HOST: "0.0.0.0"
     depends_on:
       - kafka
       - ingestion
+      - timescaledb
 
   # ── Sabarish — Prediction ──────────────────────────────
   prediction:
@@ -127,3 +142,6 @@ services:
     depends_on:
       - prediction
       - feature_engine
+
+volumes:
+  timescale_data:
