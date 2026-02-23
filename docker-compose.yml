@@ -327,6 +327,87 @@ services:
       - scarnet
       - api_gateway
 
+  # ── Dhana — Notification Hub (Phase 5) ───────────────────
+  notification_hub:
+    build:
+      context: .
+      dockerfile: services/notification_hub/Dockerfile
+    ports:
+      - "8014:8014"
+    env_file: .env
+    environment:
+      SERVICE_HOST: "0.0.0.0"
+      NOTIFICATION_HUB_PORT: "8014"
+      KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+      REDIS_URL: redis://redis:6379/3
+      VAPID_PRIVATE_KEY: ${VAPID_PRIVATE_KEY:-}
+      VAPID_PUBLIC_KEY: ${VAPID_PUBLIC_KEY:-}
+    depends_on:
+      - kafka
+      - redis
+
+  # ── Dhana — Multi-Basin Manager (Phase 5) ───────────────
+  multi_basin:
+    build:
+      context: .
+      dockerfile: services/multi_basin/Dockerfile
+    ports:
+      - "8015:8015"
+    env_file: .env
+    environment:
+      SERVICE_HOST: "0.0.0.0"
+      MULTI_BASIN_PORT: "8015"
+      KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+      REDIS_URL: redis://redis:6379/4
+    depends_on:
+      - kafka
+      - redis
+      - prediction
+
+  # ── Monitoring — Prometheus ─────────────────────────────
+  prometheus:
+    image: prom/prometheus:v2.51.0
+    container_name: argus_prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./infra/monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
+      - ./infra/monitoring/prometheus_rules.yml:/etc/prometheus/rules.yml
+      - prometheus_data:/prometheus
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.retention.time=30d"
+
+  # ── Monitoring — Grafana ────────────────────────────────
+  grafana:
+    image: grafana/grafana:10.4.0
+    container_name: argus_grafana
+    ports:
+      - "3001:3000"
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: argus
+      GF_USERS_ALLOW_SIGN_UP: "false"
+    volumes:
+      - ./infra/monitoring/grafana_dashboard.json:/var/lib/grafana/dashboards/argus.json
+      - grafana_data:/var/lib/grafana
+    depends_on:
+      - prometheus
+
+  # ── MLflow Experiment Tracking ──────────────────────────
+  mlflow:
+    image: ghcr.io/mlflow/mlflow:v2.12.1
+    container_name: argus_mlflow
+    ports:
+      - "5000:5000"
+    command: >
+      mlflow server
+      --host 0.0.0.0
+      --port 5000
+      --backend-store-uri sqlite:///mlflow.db
+      --default-artifact-root /mlflow/artifacts
+    volumes:
+      - mlflow_data:/mlflow
+
   # ── Hardhat Local Blockchain ─────────────────────────────
   hardhat:
     image: node:18-slim
@@ -340,3 +421,6 @@ services:
 
 volumes:
   timescale_data:
+  prometheus_data:
+  grafana_data:
+  mlflow_data:
