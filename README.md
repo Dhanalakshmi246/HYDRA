@@ -27,7 +27,7 @@ All services communicate through **Apache Kafka** topics.
 
 ---
 
-## Services
+## Services 
 
 | Service | Owner | Port | Description |
 |---------|-------|------|-------------|
