@@ -1,178 +1,262 @@
 /**
- * EvacuationMap — Evacuation route overlay with zone markers and
- * animated evacuation flow arrows.
+ * EvacuationMap — Phase 2 enhanced evacuation planning dashboard.
  *
- * Fetches from /api/v1/evacuation/graph/{village} and
- * /api/v1/evacuation/plan when risk is high.
+ * Full-screen mode with vehicle assignments, road closure warnings,
+ * shelter capacity bars, per-village cards, and bottom stats bar.
  */
 
 import { useState, useEffect, useCallback } from 'react'
-import axios from 'axios'
+import useEvacuationPlan from '../hooks/useEvacuationPlan'
 
-const EVAC_API = import.meta.env.VITE_EVAC_API || '/api/v1/evacuation'
-
-const ZONE_COLORS = {
-  safe: '#22c55e',       // green
-  populated: '#f97316',  // orange
-  at_risk: '#ef4444',    // red
+const VEHICLE_ICONS = { bus: '🚌', truck: '🚛', boat: '🚤', helicopter: '🚁' }
+const PRIORITY_COLORS = ['', 'text-red-400', 'text-orange-400', 'text-yellow-400', 'text-blue-400']
+const STATUS_BADGES = {
+  pending: { bg: 'bg-amber-900/40', text: 'text-amber-400', label: 'PENDING' },
+  in_transit: { bg: 'bg-blue-900/40', text: 'text-blue-400', label: 'IN TRANSIT' },
+  completed: { bg: 'bg-green-900/40', text: 'text-green-400', label: 'COMPLETE' },
+  blocked: { bg: 'bg-red-900/40', text: 'text-red-400', label: 'BLOCKED' },
 }
 
-const ROUTE_COLORS = {
-  paved: '#60a5fa',
-  unpaved: '#fbbf24',
-  bridge: '#a78bfa',
-  boat: '#34d399',
-}
-
-export default function EvacuationMap({ selectedVillage = 'kullu_01', riskScore = 0, demoMode = false }) {
-  const [graph, setGraph] = useState(null)
-  const [plan, setPlan] = useState(null)
-  const [loading, setLoading] = useState(false)
+export default function EvacuationMap({ selectedVillage = 'kullu_01', riskScore = 0, demoMode = false, fullScreen = false }) {
+  const { plan, notifications, loading, triggerDemo, recompute } = useEvacuationPlan(demoMode)
   const [expanded, setExpanded] = useState(true)
+  const [selectedAssignment, setSelectedAssignment] = useState(null)
+  const [showNotifications, setShowNotifications] = useState(false)
 
-  // Fetch graph
-  const fetchGraph = useCallback(async () => {
-    try {
-      const { data } = await axios.get(`${EVAC_API}/graph/${selectedVillage}`)
-      setGraph(data)
-    } catch {
-      // Demo fallback
-      setGraph({
-        village_id: selectedVillage,
-        zones: [
-          { zone_id: 'z1', name: 'Lower Colony', population: 320, is_safe_zone: false, elevation_m: 1180 },
-          { zone_id: 'z2', name: 'Market Area', population: 450, is_safe_zone: false, elevation_m: 1195 },
-          { zone_id: 'z3', name: 'River Bank', population: 180, is_safe_zone: false, elevation_m: 1170 },
-          { zone_id: 'z5', name: 'School Hill', population: 0, is_safe_zone: true, capacity: 800, elevation_m: 1240 },
-          { zone_id: 'z6', name: 'Temple Grounds', population: 0, is_safe_zone: true, capacity: 600, elevation_m: 1260 },
-        ],
-        routes: [
-          { route_id: 'r1', from_zone: 'z1', to_zone: 'z5', distance_km: 1.2, travel_time_min: 15, road_type: 'paved', is_passable: true },
-          { route_id: 'r5', from_zone: 'z3', to_zone: 'z6', distance_km: 0.6, travel_time_min: 10, road_type: 'unpaved', is_passable: true },
-          { route_id: 'r3', from_zone: 'z2', to_zone: 'z5', distance_km: 0.9, travel_time_min: 12, road_type: 'paved', is_passable: true },
-        ],
-        total_population: 950,
-        safe_capacity: 1400,
-      })
+  // Compact overlay mode (when not fullScreen)
+  if (!fullScreen) {
+    if (!expanded) {
+      return (
+        <button
+          onClick={() => setExpanded(true)}
+          className="bg-navy/90 border border-gray-700 text-accent text-xs font-mono px-3 py-2 rounded-lg hover:border-accent transition-colors"
+        >
+          EVAC MAP ▸
+        </button>
+      )
     }
-  }, [selectedVillage])
 
-  // Fetch plan when risk is high
-  const fetchPlan = useCallback(async () => {
-    if (riskScore < 0.4 && !demoMode) {
-      setPlan(null)
-      return
-    }
-    try {
-      const { data } = await axios.post(`${EVAC_API}/plan`, null, {
-        params: { village_id: selectedVillage, risk_score: demoMode ? 0.75 : riskScore },
-      })
-      setPlan(data)
-    } catch {
-      setPlan(null)
-    }
-  }, [selectedVillage, riskScore, demoMode])
-
-  useEffect(() => { fetchGraph() }, [fetchGraph])
-  useEffect(() => { fetchPlan() }, [fetchPlan])
-
-  if (!expanded) {
     return (
-      <button
-        onClick={() => setExpanded(true)}
-        className="bg-navy/90 border border-gray-700 text-accent text-xs font-mono px-3 py-2 rounded-lg hover:border-accent transition-colors"
-      >
-        EVAC MAP ▸
-      </button>
+      <div className="bg-navy/95 backdrop-blur-sm border border-gray-700 rounded-xl p-4 max-w-sm">
+        <div className="flex justify-between items-center mb-3">
+          <h3 className="font-display text-sm text-white tracking-wider">EVACUATION MAP</h3>
+          <button onClick={() => setExpanded(false)} className="text-gray-500 text-xs hover:text-white">✕</button>
+        </div>
+        <div className="text-xs text-gray-400">
+          {plan ? `${plan.total_people_covered || 0} people · ${plan.assignments?.length || 0} routes` : 'No active plan'}
+        </div>
+      </div>
     )
   }
 
+  // ── Full-screen mode ──────────────────────────────────────────────
   return (
-    <div className="bg-navy/95 backdrop-blur-sm border border-gray-700 rounded-xl p-4 max-w-sm">
-      <div className="flex justify-between items-center mb-3">
-        <h3 className="font-display text-sm text-white tracking-wider">
-          EVACUATION MAP
-        </h3>
-        <button onClick={() => setExpanded(false)} className="text-gray-500 text-xs hover:text-white">✕</button>
-      </div>
-
-      {/* Zone list */}
-      <div className="space-y-2 mb-3">
-        <div className="text-[10px] text-gray-500 uppercase tracking-wider">Zones</div>
-        {graph?.zones?.map((z) => (
-          <div
-            key={z.zone_id}
-            className="flex items-center justify-between bg-gray-800/50 rounded px-2 py-1"
-          >
-            <div className="flex items-center gap-2">
-              <div
-                className="w-2 h-2 rounded-full"
-                style={{ backgroundColor: z.is_safe_zone ? ZONE_COLORS.safe : ZONE_COLORS.populated }}
-              />
-              <span className="text-xs text-gray-300">{z.name}</span>
-            </div>
-            <span className="text-[10px] text-gray-500 font-mono">
-              {z.is_safe_zone
-                ? `CAP ${z.capacity}`
-                : `POP ${z.population}`
-              }
-              {' '} · {z.elevation_m}m
+    <div className="flex-1 flex bg-navy">
+      {/* Left sidebar — Village assignment cards */}
+      <div className="w-80 border-r border-gray-800 flex flex-col overflow-hidden">
+        <div className="p-4 border-b border-gray-800">
+          <div className="flex items-center justify-between mb-2">
+            <h2 className="font-display text-white tracking-wider text-sm">
+              🚌 EVACUATION PLANNER
+            </h2>
+            <span className={`text-[10px] font-mono px-2 py-0.5 rounded ${
+              plan?.planner_mode === 'ppo' ? 'bg-purple-900/50 text-purple-400' : 'bg-blue-900/50 text-blue-400'
+            }`}>
+              {plan?.planner_mode?.toUpperCase() || 'OFFLINE'}
             </span>
           </div>
-        ))}
+
+          {/* Action buttons */}
+          <div className="flex gap-2">
+            <button
+              onClick={triggerDemo}
+              disabled={loading}
+              className="flex-1 text-[10px] font-mono bg-accent/20 text-accent border border-accent/40 rounded px-2 py-1.5 hover:bg-accent/30 disabled:opacity-50 transition-colors"
+            >
+              {loading ? '⟳ COMPUTING...' : '▶ RUN DEMO'}
+            </button>
+            <button
+              onClick={recompute}
+              disabled={loading}
+              className="text-[10px] font-mono text-gray-400 border border-gray-700 rounded px-2 py-1.5 hover:border-accent hover:text-accent disabled:opacity-50 transition-colors"
+            >
+              ⟳
+            </button>
+            <button
+              onClick={() => setShowNotifications(!showNotifications)}
+              className={`text-[10px] font-mono border rounded px-2 py-1.5 transition-colors ${
+                showNotifications
+                  ? 'text-amber-400 border-amber-700 bg-amber-900/20'
+                  : 'text-gray-400 border-gray-700 hover:border-amber-500'
+              }`}
+            >
+              🔔 {notifications.length}
+            </button>
+          </div>
+        </div>
+
+        {/* Notifications panel */}
+        {showNotifications && notifications.length > 0 && (
+          <div className="border-b border-gray-800 max-h-48 overflow-y-auto">
+            {notifications.map((n, i) => (
+              <div key={i} className={`px-3 py-2 border-b border-gray-800/50 text-[10px] ${
+                n.level === 'CRITICAL' ? 'bg-red-900/10 text-red-300' :
+                n.level === 'URGENT' ? 'bg-orange-900/10 text-orange-300' :
+                'text-gray-400'
+              }`}>
+                {n.message}
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Assignment cards */}
+        <div className="flex-1 overflow-y-auto p-2 space-y-2">
+          {plan?.assignments?.map((a, i) => {
+            const badge = STATUS_BADGES[a.status] || STATUS_BADGES.pending
+            const isSelected = selectedAssignment === i
+            return (
+              <div
+                key={`${a.village_id}-${a.vehicle_id}`}
+                onClick={() => setSelectedAssignment(isSelected ? null : i)}
+                className={`rounded-lg border p-3 cursor-pointer transition-all ${
+                  isSelected
+                    ? 'border-accent bg-accent/10 shadow-lg shadow-accent/5'
+                    : 'border-gray-700 bg-gray-800/30 hover:border-gray-600'
+                }`}
+              >
+                <div className="flex items-center justify-between mb-1.5">
+                  <div className="flex items-center gap-2">
+                    <span className={`text-sm font-bold ${PRIORITY_COLORS[a.priority] || 'text-white'}`}>
+                      P{a.priority}
+                    </span>
+                    <span className="text-xs text-white font-medium">{a.village_name || a.village_id}</span>
+                  </div>
+                  <span className={`text-[9px] font-mono px-1.5 py-0.5 rounded ${badge.bg} ${badge.text}`}>
+                    {badge.label}
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-2 gap-x-3 gap-y-1 text-[10px]">
+                  <div className="text-gray-400">
+                    {VEHICLE_ICONS[a.vehicle_type] || '🚐'} {a.vehicle_id}
+                  </div>
+                  <div className="text-gray-400">
+                    👥 {a.population?.toLocaleString()} people
+                  </div>
+                  <div className="text-gray-400">
+                    🛣️ {a.route_id}
+                  </div>
+                  <div className="text-gray-400">
+                    🏠 {a.shelter_id}
+                  </div>
+                  <div className="text-cyan-400 font-mono">
+                    ETA {a.eta_minutes} min
+                  </div>
+                  <div className="text-gray-500">
+                    {a.trips_needed} trips
+                  </div>
+                </div>
+
+                {a.road_closure_warning && (
+                  <div className="mt-1.5 text-[9px] text-amber-400 bg-amber-900/20 rounded px-2 py-1">
+                    ⚠️ Road closure imminent — depart before cutoff
+                  </div>
+                )}
+
+                {isSelected && (
+                  <div className="mt-2 pt-2 border-t border-gray-700 text-[9px] text-gray-500">
+                    <div>Departure cutoff: {a.departure_cutoff_utc ? new Date(a.departure_cutoff_utc).toLocaleTimeString() : '—'}</div>
+                    <div>Trips needed: {a.trips_needed} (vehicle cap: {a.population && a.trips_needed ? Math.ceil(a.population / a.trips_needed) : '—'})</div>
+                  </div>
+                )}
+              </div>
+            )
+          })}
+
+          {(!plan || !plan.assignments?.length) && (
+            <div className="text-center py-8">
+              <div className="text-3xl mb-2">🚌</div>
+              <div className="text-xs text-gray-500">No active evacuation plan</div>
+              <div className="text-[10px] text-gray-600 mt-1">Click "RUN DEMO" to simulate Majuli Island scenario</div>
+            </div>
+          )}
+        </div>
       </div>
 
-      {/* Routes */}
-      {graph?.routes?.length > 0 && (
-        <div className="space-y-1 mb-3">
-          <div className="text-[10px] text-gray-500 uppercase tracking-wider">Routes</div>
-          {graph.routes.map((r) => (
-            <div
-              key={r.route_id}
-              className="flex items-center gap-2 text-[10px]"
-            >
-              <div
-                className="w-8 h-0.5"
-                style={{ backgroundColor: ROUTE_COLORS[r.road_type] || '#666' }}
-              />
-              <span className="text-gray-400">
-                {r.from_zone} → {r.to_zone}
-              </span>
-              <span className="text-gray-600">
-                {r.distance_km}km · {r.travel_time_min}min · {r.road_type}
-              </span>
-              {!r.is_passable && <span className="text-red-500 font-bold">BLOCKED</span>}
-            </div>
-          ))}
-        </div>
-      )}
-
-      {/* Plan */}
-      {plan && plan.actions?.length > 0 && (
-        <div className="border-t border-gray-700 pt-2 mt-2">
-          <div className="text-[10px] text-amber-500 uppercase tracking-wider mb-1">
-            RL Evacuation Plan · Reward: {plan.rl_reward}
-          </div>
-          {plan.actions.slice(0, 5).map((a, i) => (
-            <div key={a.action_id} className="text-[10px] text-gray-300 flex gap-1 mb-0.5">
-              <span className="text-accent font-mono">P{a.priority}</span>
-              <span>{a.zone_id} → {a.recommended_route}</span>
-              <span className="text-gray-500">{a.population_to_move} people · {a.estimated_travel_min}min</span>
-            </div>
-          ))}
-          <div className="text-[10px] text-gray-500 mt-1">
-            Clear time: ~{plan.estimated_clear_time_min}min · {plan.actions.length} moves
+      {/* Main content area — Stats + Map placeholder */}
+      <div className="flex-1 flex flex-col">
+        {/* Map placeholder */}
+        <div className="flex-1 relative bg-gray-900/50 flex items-center justify-center">
+          <div className="text-center">
+            <div className="text-6xl mb-4">🗺️</div>
+            <div className="text-gray-400 text-sm font-display tracking-wider">EVACUATION MAP</div>
+            <div className="text-gray-600 text-xs mt-2">MapBox GL integration — routes, vehicles, shelters</div>
+            {plan && (
+              <div className="mt-4 grid grid-cols-2 gap-3 max-w-sm mx-auto">
+                {plan.assignments?.map((a, i) => (
+                  <div key={i} className="bg-gray-800/60 rounded-lg p-2 text-left">
+                    <div className="text-[10px] text-gray-500">{a.village_name || a.village_id}</div>
+                    <div className="flex items-center gap-2 mt-1">
+                      <span className="text-sm">{VEHICLE_ICONS[a.vehicle_type] || '🚐'}</span>
+                      <span className="text-xs text-white">→ {a.shelter_id}</span>
+                    </div>
+                    <div className="w-full bg-gray-700 rounded-full h-1 mt-1.5">
+                      <div
+                        className="bg-accent h-1 rounded-full transition-all"
+                        style={{ width: `${Math.min(100, (1 - a.eta_minutes / 120) * 100)}%` }}
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
-      )}
 
-      {/* Summary */}
-      <div className="flex gap-3 mt-3 text-[10px]">
-        <span className="text-green-400">■ SAFE</span>
-        <span className="text-orange-400">■ POPULATED</span>
-        <span className="text-gray-500">
-          Pop: {graph?.total_population || 0} · Cap: {graph?.safe_capacity || 0}
-        </span>
+        {/* Bottom stats bar */}
+        {plan && (
+          <div className="border-t border-gray-800 bg-gray-900/80 px-6 py-3 flex items-center gap-6">
+            <div>
+              <div className="text-2xl text-white font-mono font-bold">
+                {plan.total_people_covered?.toLocaleString() || 0}
+              </div>
+              <div className="text-[9px] text-gray-500 uppercase tracking-wider">People Covered</div>
+            </div>
+            <div>
+              <div className="text-2xl text-cyan-400 font-mono font-bold">
+                {plan.estimated_completion_minutes || '—'}
+              </div>
+              <div className="text-[9px] text-gray-500 uppercase tracking-wider">Est. Minutes</div>
+            </div>
+            <div>
+              <div className="text-2xl text-accent font-mono font-bold">
+                {plan.vehicles_deployed || 0}
+              </div>
+              <div className="text-[9px] text-gray-500 uppercase tracking-wider">Vehicles</div>
+            </div>
+            <div>
+              <div className="text-2xl text-green-400 font-mono font-bold">
+                {plan.shelters_used || 0}
+              </div>
+              <div className="text-[9px] text-gray-500 uppercase tracking-wider">Shelters</div>
+            </div>
+            <div className="ml-auto">
+              <div className="text-lg text-white font-mono">
+                {plan.confidence ? `${(plan.confidence * 100).toFixed(0)}%` : '—'}
+              </div>
+              <div className="text-[9px] text-gray-500 uppercase tracking-wider">Confidence</div>
+            </div>
+            <div>
+              <div className={`text-sm font-mono px-2 py-1 rounded ${
+                plan.planner_mode === 'ppo' ? 'bg-purple-900/40 text-purple-400' : 'bg-blue-900/40 text-blue-400'
+              }`}>
+                {plan.planner_mode?.toUpperCase() || 'OFFLINE'}
+              </div>
+              <div className="text-[9px] text-gray-500 uppercase tracking-wider mt-0.5">Planner</div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   )

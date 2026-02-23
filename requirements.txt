@@ -83,3 +83,10 @@ flwr>=1.7,<2.0              # Flower federated learning
 # Phase 2: TFT Deep Track (multi-horizon prediction)
 # pytorch-forecasting>=1.0  # optional — synthetic fallback exists
 # pytorch-lightning>=2.1    # optional — required for TFT checkpoint
+
+# Phase 2: Evacuation RL (PettingZoo multi-agent)
+pettingzoo>=1.24,<2.0       # multi-agent environment
+# stable-baselines3>=2.2    # optional — rule-based fallback exists
+
+# Phase 2: MIRROR PDF reports
+reportlab>=4.1,<5.0         # NDMA-format PDF generation
