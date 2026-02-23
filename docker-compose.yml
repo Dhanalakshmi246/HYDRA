@@ -292,6 +292,47 @@ services:
     depends_on:
       - kafka
 
+  # ── Phase 3: Rogesh — ScarNet Terrain Monitor ─────────
+  scarnet:
+    build:
+      context: .
+      dockerfile: services/scarnet/Dockerfile
+    ports:
+      - "8013:8013"
+    env_file: .env
+    environment:
+      SERVICE_HOST: "0.0.0.0"
+      SCARNET_PORT: "8013"
+      SCARNET_DEMO_MODE: "true"
+    volumes:
+      - ./data:/app/data
+      - ./models:/app/models
+    depends_on:
+      - kafka
+
+  # ── Phase 3: Rogesh — API Gateway ─────────────────────
+  api_gateway:
+    build:
+      context: .
+      dockerfile: services/api_gateway/Dockerfile
+    ports:
+      - "8000:8000"
+    env_file: .env
+    environment:
+      SERVICE_HOST: "0.0.0.0"
+      GATEWAY_PORT: "8000"
+      GATEWAY_CACHE_TTL: "30"
+    depends_on:
+      - ingestion
+      - cv_gauging
+      - feature_engine
+      - prediction
+      - alert_dispatcher
+      - chorus
+      - evacuation_rl
+      - mirror
+      - scarnet
+
   # ── Dhana — Dashboard ─────────────────────────────────
   dashboard:
     build:
@@ -308,6 +349,8 @@ services:
       - chorus
       - evacuation_rl
       - mirror
+      - scarnet
+      - api_gateway
 
 volumes:
   timescale_data:

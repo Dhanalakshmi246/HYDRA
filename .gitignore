@@ -45,6 +45,9 @@ data/*.mp4
 data/*.avi
 data/*.csv
 data/*.sqlite
+data/sentinel2/*.npy
+data/sentinel2/*.tif
+data/sentinel2/*_meta.json
 !data/.gitkeep
 !data/cctv_registry.json
 !data/station_topology.json

@@ -90,3 +90,20 @@ pettingzoo>=1.24,<2.0       # multi-agent environment
 
 # Phase 2: MIRROR PDF reports
 reportlab>=4.1,<5.0         # NDMA-format PDF generation
+
+# ── Phase 3 ──────────────────────────────────────────────
+
+# ScarNet — Satellite terrain change detection
+# rasterio>=1.3,<2.0       # optional — numpy fallback for tile I/O
+# geopandas>=0.14           # optional — heavy geospatial dependency
+scikit-image>=0.22,<1.0     # image processing (resize, morphology)
+
+# API Gateway
+# fastapi-cache2>=0.2       # optional — using built-in SimpleCache
+
+# Load testing
+locust>=2.20,<3.0           # load/stress testing framework
+
+# Integration testing
+pytest>=8.0,<9.0            # test framework
+pytest-asyncio>=0.23,<1.0   # async test support

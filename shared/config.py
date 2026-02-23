@@ -128,6 +128,21 @@ class Settings:
     TFT_CHECKPOINT_PATH: str = os.getenv("TFT_CHECKPOINT_PATH", "./models/tft_flood.ckpt")
     TFT_ENABLED: bool = os.getenv("TFT_ENABLED", "true").lower() in ("true", "1", "yes")
 
+    # ═══════════════════════  PHASE 3  ════════════════════════
+
+    # ── ScarNet — Satellite Terrain Monitor ──────────────────
+    SCARNET_PORT: int = int(os.getenv("SCARNET_PORT", "8013"))
+    SCARNET_DEMO_MODE: bool = os.getenv("SCARNET_DEMO_MODE", "true").lower() in ("true", "1", "yes")
+    COPERNICUS_CLIENT_ID: str = os.getenv("COPERNICUS_CLIENT_ID", "")
+    COPERNICUS_CLIENT_SECRET: str = os.getenv("COPERNICUS_CLIENT_SECRET", "")
+    UNET_CHECKPOINT: str = os.getenv("UNET_CHECKPOINT", "./models/unet_change_detect.pt")
+    SENTINEL2_BEFORE_TILE: str = os.getenv("SENTINEL2_BEFORE_TILE", "./data/sentinel2/beas_valley_2022_08_before.tif")
+    SENTINEL2_AFTER_TILE: str = os.getenv("SENTINEL2_AFTER_TILE", "./data/sentinel2/beas_valley_2023_09_after.tif")
+
+    # ── API Gateway ──────────────────────────────────────────
+    GATEWAY_PORT: int = int(os.getenv("GATEWAY_PORT", "8000"))
+    GATEWAY_CACHE_TTL: int = int(os.getenv("GATEWAY_CACHE_TTL", "30"))
+
     # ── General ──────────────────────────────────────────────
     SERVICE_HOST: str = os.getenv("SERVICE_HOST", "0.0.0.0")
     LOG_LEVEL: str = os.getenv("LOG_LEVEL", "INFO")
