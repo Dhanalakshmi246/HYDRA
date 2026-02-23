@@ -13,6 +13,7 @@ const MOMENTS = [
   { id: 'evacuation',   label: 'Evacuation',     icon: '🚌', color: '#22c55e', shortLabel: 'Evac' },
   { id: 'flood_ledger', label: 'FloodLedger',    icon: '🔗', color: '#3b82f6', shortLabel: 'Ledger' },
   { id: 'mirror',       label: 'MIRROR',         icon: '🔮', color: '#ec4899', shortLabel: 'Mirror' },
+  { id: 'closing',      label: 'Closing',        icon: '🛡', color: '#00c9ff', shortLabel: 'Close' },
 ]
 
 export default MOMENTS

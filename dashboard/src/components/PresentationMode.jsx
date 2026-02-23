@@ -6,7 +6,7 @@ import MOMENTS from '../config/moments'
 /**
  * PresentationMode — THE MOST IMPORTANT COMPONENT
  *
- * Fullscreen judge-facing UI with 7 demo moments.
+ * Fullscreen judge-facing UI with 8 demo moments.
  * Each moment showcases a key ARGUS capability:
  *
  *   1. CV Gauging     — Real-time computer vision water level
@@ -16,6 +16,7 @@ import MOMENTS from '../config/moments'
  *   5. Evacuation     — RL-optimized evacuation routing
  *   6. FloodLedger    — Blockchain audit trail + insurance
  *   7. MIRROR         — Counterfactual "what-if" analysis
+ *   8. Closing        — Cinematic closing statement
  *
  * Layout:
  *  ┌─────────────── TopBar (ARGUS brand + moment dots) ──────────────┐
@@ -609,6 +610,58 @@ function MirrorHero() {
   )
 }
 
+// ── Closing Hero (Slide 14 equivalent) ─────────────────────────────
+function ClosingHero() {
+  const [visibleLines, setVisibleLines] = useState(0)
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setVisibleLines(prev => (prev < 9 ? prev + 1 : prev))
+    }, 800)
+    return () => clearInterval(timer)
+  }, [])
+
+  const lines = [
+    { text: '5,000 sensors broke under the mud.', style: 'text-gray-400' },
+    { text: 'ARGUS turned every camera into a gauge.', style: 'text-accent' },
+    { text: 'The towers fell.', style: 'text-gray-400' },
+    { text: 'The crisis nodes kept warning.', style: 'text-accent' },
+    { text: 'The water hit.', style: 'text-gray-400' },
+    { text: 'Every village had a plan.', style: 'text-emerald-400' },
+    { text: 'The flood ended.', style: 'text-gray-400' },
+    { text: 'MIRROR told the government which decision would have saved 44 lives.', style: 'text-emerald-400' },
+  ]
+
+  return (
+    <div className="flex items-center justify-center h-full">
+      <div className="max-w-3xl text-center space-y-4">
+        {lines.map((line, i) => (
+          <div
+            key={i}
+            className={`font-body text-xl transition-all duration-700 ${
+              i < visibleLines ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
+            } ${line.style}`}
+            style={{ transitionDelay: `${i * 100}ms` }}
+          >
+            {line.text}
+          </div>
+        ))}
+
+        {visibleLines >= 8 && (
+          <div className="pt-12 animate-slide-up">
+            <h1
+              className="font-heading font-bold text-accent tracking-wide"
+              style={{ fontSize: '3rem', letterSpacing: '4px' }}
+            >
+              ARGUS cannot be blinded.
+            </h1>
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
 // ── Hero Dispatcher ────────────────────────────────────────────────
 function HeroContent({ momentId, predictions }) {
   switch (momentId) {
@@ -619,6 +672,7 @@ function HeroContent({ momentId, predictions }) {
     case 'evacuation':   return <EvacuationHero />
     case 'flood_ledger': return <FloodLedgerHero />
     case 'mirror':       return <MirrorHero />
+    case 'closing':      return <ClosingHero />
     default:             return <CVGaugingHero />
   }
 }
