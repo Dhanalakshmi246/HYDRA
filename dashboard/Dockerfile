@@ -1,7 +1,7 @@
 FROM node:20-alpine AS build
 WORKDIR /app
 COPY dashboard/package.json dashboard/package-lock.json ./
-RUN npm ci
+RUN npm ci --legacy-peer-deps
 COPY dashboard/ .
 RUN npm run build
 

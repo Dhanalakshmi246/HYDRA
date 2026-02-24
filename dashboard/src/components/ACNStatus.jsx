@@ -15,7 +15,7 @@ export default function ACNStatus({ predictions, demoMode }) {
     : false
 
   return (
-    <div className="absolute bottom-6 right-4 bg-navy-light/90 backdrop-blur-md border border-white/10 rounded-lg px-3 py-2 z-30 w-56">
+    <div className="absolute bottom-6 right-4 bg-navy-light/90 backdrop-blur-md border border-white/10 rounded-lg px-3 py-2 z-[1000] w-56">
       <h4 className="font-heading text-xs font-semibold text-accent mb-2 tracking-wide uppercase">
         ACN Nodes
       </h4>

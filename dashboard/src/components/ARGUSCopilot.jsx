@@ -15,7 +15,7 @@ const SUGGESTED_QUESTIONS = [
   "Send EMERGENCY alert to Ward 7",
 ]
 
-const COPILOT_API = import.meta.env.VITE_COPILOT_URL || 'http://localhost:8016'
+const COPILOT_API = import.meta.env.VITE_COPILOT_URL || ''
 
 export default function ARGUSCopilot({ district = 'Majuli', userRole = 'DISTRICT_MAGISTRATE' }) {
   const [isOpen, setIsOpen] = useState(false)

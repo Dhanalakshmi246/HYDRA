@@ -79,8 +79,8 @@ function LazyFallback() {
 }
 
 export default function App() {
-  const [demoMode, setDemoMode] = useState(false)
-  const [activeTab, setActiveTab] = useState('gauges')
+  const [demoMode, setDemoMode] = useState(true)
+  const [activeTab, setActiveTab] = useState('risk_map')
   const [presenting, setPresenting] = useState(false)
   const [currentMoment, setCurrentMoment] = useState('cv_gauging')
 

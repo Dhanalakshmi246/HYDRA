@@ -91,6 +91,61 @@ _TIMESCALE_DSN = os.getenv(
     os.getenv("TIMESCALEDB_DSN", "postgresql://argus:argus@localhost:5432/argus"),
 )
 
+DEMO_MODE = os.getenv("DEMO_MODE", "true").lower() in ("true", "1", "yes")
+
+
+def _seed_demo_predictions():
+    """Populate prediction cache with realistic demo data for all 12 villages.
+
+    Called at startup when DEMO_MODE=true and cache is empty, so the dashboard
+    and copilot have predictions available immediately.
+    """
+    import random
+
+    now = datetime.now(timezone.utc)
+
+    villages = [
+        ("VIL-HP-MANDI",     "WATCH",     0.62),
+        ("VIL-HP-KULLU",     "ADVISORY",  0.48),
+        ("VIL-HP-MANALI",    "NORMAL",    0.22),
+        ("VIL-HP-BHUNTAR",   "ADVISORY",  0.41),
+        ("VIL-HP-PANDOH",    "NORMAL",    0.18),
+        ("VIL-HP-LARJI",     "NORMAL",    0.28),
+        ("VIL-HP-BANJAR",    "NORMAL",    0.15),
+        ("VIL-AS-MAJULI",    "WARNING",   0.81),
+        ("VIL-AS-JORHAT",    "WATCH",     0.58),
+        ("VIL-AS-DIBRUGARH", "ADVISORY",  0.44),
+        ("VIL-AS-TEZPUR",    "ADVISORY",  0.39),
+        ("VIL-AS-GUWAHATI",  "NORMAL",    0.25),
+    ]
+
+    for vid, level, base_risk in villages:
+        risk = round(base_risk + random.uniform(-0.03, 0.03), 4)
+        result = {
+            "village_id": vid,
+            "risk_score": risk,
+            "alert_level": level,
+            "explanation": [
+                {"feature": "cumulative_rainfall_6hr", "shap_value": round(random.uniform(0.05, 0.25), 3), "direction": "UP"},
+                {"feature": "soil_moisture_index", "shap_value": round(random.uniform(0.03, 0.15), 3), "direction": "UP"},
+                {"feature": "upstream_risk_score", "shap_value": round(random.uniform(0.02, 0.10), 3), "direction": "UP"},
+            ],
+            "adaptive_threshold": {
+                "advisory": 0.35,
+                "watch": 0.55,
+                "warning": 0.72,
+                "emergency": 0.88,
+                "adjustment_reason": "monsoon_active + elevated_soil_moisture",
+            },
+            "timestamp": now.isoformat(),
+            "confidence": "HIGH" if risk > 0.6 else "MEDIUM" if risk > 0.35 else "LOW",
+            "quality": "DEMO",
+        }
+        _predictions_cache[vid] = result
+        _predictions_history[vid].append(result)
+
+    logger.info("demo_predictions_seeded", count=len(villages))
+
 
 # ══════════════════════════════════════════════════════════════════════════
 # Core prediction pipeline
@@ -208,6 +263,10 @@ async def lifespan(app: FastAPI):
 
     # Start TimescaleDB feature consumer (new fast-track path)
     feature_task = asyncio.create_task(feature_consumer.start())
+
+    # Seed demo predictions so dashboard has data on startup
+    if DEMO_MODE and not _predictions_cache:
+        _seed_demo_predictions()
 
     yield
 

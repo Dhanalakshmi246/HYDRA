@@ -64,6 +64,44 @@ class AlertResponse(BaseModel):
     reason: str = ""
 
 
+def _seed_demo_alerts():
+    """Populate alert log with realistic demo entries for dashboard display."""
+    import random
+    from datetime import timedelta
+
+    now = datetime.now(timezone.utc)
+    villages = [
+        ("VIL-AS-MAJULI", "Majuli Ward 7"),
+        ("VIL-HP-MANDI", "Mandi"),
+        ("VIL-HP-KULLU", "Kullu"),
+        ("VIL-AS-JORHAT", "Jorhat"),
+        ("VIL-HP-MANALI", "Manali"),
+    ]
+    levels = [
+        ("ADVISORY", 0.38), ("ADVISORY", 0.42), ("WATCH", 0.58),
+        ("WATCH", 0.65), ("WARNING", 0.76), ("WARNING", 0.81),
+        ("EMERGENCY", 0.91),
+    ]
+
+    for i, (level, risk) in enumerate(levels):
+        vid, vname = villages[i % len(villages)]
+        ts = now - timedelta(minutes=(len(levels) - i) * 5)
+        _alert_log.append({
+            "id": f"demo-{i+1}",
+            "alert_id": f"ALERT-{vid}-{int(ts.timestamp())}",
+            "village_id": vid,
+            "village_name": vname,
+            "alert_level": level,
+            "risk_score": risk + random.uniform(-0.03, 0.03),
+            "status": "sent",
+            "timestamp": ts.isoformat(),
+            "message": f"{level} alert triggered for {vname}",
+            "channels_sent": ["whatsapp_demo", "sms_demo"],
+        })
+    _stats["sent"] = len(levels)
+    logger.info("demo_alerts_seeded", count=len(levels))
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     global _twilio_client
@@ -77,6 +115,10 @@ async def lifespan(app: FastAPI):
             logger.info("twilio_client_ready")
         except Exception as e:
             logger.warning("twilio_unavailable", error=str(e))
+
+    # Seed demo alerts so dashboard has data on startup
+    if DEMO_MODE and not _alert_log:
+        _seed_demo_alerts()
 
     logger.info("alert_dispatcher_ready")
     yield

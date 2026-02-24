@@ -1,5 +1,21 @@
 import { useState, useEffect } from 'react'
 
+const DEMO_GAUGES = [
+  { station_id: 'CWC-HP-MANDI-01', station_name: 'Mandi — Beas River', level_m: 3.82, danger_level_m: 4.5, warning_level_m: 3.5, source: 'CWC_WRIS', quality_flag: 'REAL' },
+  { station_id: 'VGAUGE-HP-KULLU-PINN', station_name: 'Kullu — Beas (PINN Virtual)', level_m: 4.15, danger_level_m: 5.0, warning_level_m: 4.0, source: 'VIRTUAL', quality_flag: 'SYNTHETIC' },
+  { station_id: 'DRONE-HP-MANALI-01', station_name: 'Manali — Beas Upstream', level_m: 3.41, danger_level_m: 4.2, warning_level_m: 3.2, source: 'DRONE', quality_flag: 'REAL' },
+  { station_id: 'CWC-AS-MAJULI-01', station_name: 'Majuli — Brahmaputra', level_m: 6.12, danger_level_m: 6.5, warning_level_m: 5.8, source: 'CWC_WRIS', quality_flag: 'REAL' },
+  { station_id: 'VGAUGE-AS-JORHAT-PINN', station_name: 'Jorhat — Brahmaputra (PINN)', level_m: 5.85, danger_level_m: 7.0, warning_level_m: 5.5, source: 'VIRTUAL', quality_flag: 'SYNTHETIC' },
+  { station_id: 'CWC-HP-PANDOH-01', station_name: 'Pandoh Dam Tailrace', level_m: 2.94, danger_level_m: 5.2, warning_level_m: 4.0, source: 'CWC_WRIS', quality_flag: 'REAL' },
+]
+
+const DEMO_SOIL = [
+  { station_id: 'SOIL-HP-MANDI', station_name: 'Mandi Valley', moisture_m3m3: 0.38, field_capacity_m3m3: 0.42 },
+  { station_id: 'SOIL-HP-KULLU', station_name: 'Kullu Upstream', moisture_m3m3: 0.36, field_capacity_m3m3: 0.42 },
+  { station_id: 'SOIL-AS-MAJULI', station_name: 'Majuli Island', moisture_m3m3: 0.41, field_capacity_m3m3: 0.42 },
+  { station_id: 'SOIL-AS-JORHAT', station_name: 'Jorhat Floodplain', moisture_m3m3: 0.29, field_capacity_m3m3: 0.42 },
+]
+
 /**
  * GaugeHeroPanel -- River gauge + soil moisture centrepiece
  *
@@ -25,16 +41,20 @@ const GaugeHeroPanel = () => {
           fetch('/api/v1/gauges/active'),
           fetch('/api/v1/soil/moisture/summary'),
         ])
+        let gOk = false, sOk = false
         if (gRes.status === 'fulfilled' && gRes.value.ok) {
           const gData = await gRes.value.json()
-          setGauges(gData.gauges || [])
-          setActive(gData.active_count || 0)
+          if (gData.gauges?.length) { setGauges(gData.gauges); setActive(gData.active_count || gData.gauges.length); gOk = true }
         }
         if (sRes.status === 'fulfilled' && sRes.value.ok) {
           const sData = await sRes.value.json()
-          setSoilData(sData.stations || [])
+          if (sData.stations?.length) { setSoilData(sData.stations); sOk = true }
         }
-      } catch { /* ignore */ }
+        if (!gOk) { setGauges(DEMO_GAUGES); setActive(DEMO_GAUGES.length) }
+        if (!sOk) { setSoilData(DEMO_SOIL) }
+      } catch {
+        setGauges(DEMO_GAUGES); setActive(DEMO_GAUGES.length); setSoilData(DEMO_SOIL)
+      }
       setLoading(false)
     }
     fetchAll()

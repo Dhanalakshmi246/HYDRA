@@ -28,6 +28,7 @@ export default defineConfig({
       // Phase 3 — ScarNet + Model Monitor + API Gateway
       '/api/v1/scarnet': { target: 'http://localhost:8012', changeOrigin: true },
       '/api/v1/monitor': { target: 'http://localhost:8013', changeOrigin: true },
+      '/api/v1/copilot': { target: 'http://localhost:8016', changeOrigin: true },
       '/api/v1/dashboard': { target: 'http://localhost:8000', changeOrigin: true },
       // Fallback
       '/api': { target: 'http://localhost:8000', changeOrigin: true },

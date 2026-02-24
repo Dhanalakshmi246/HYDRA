@@ -58,7 +58,8 @@ export default function useAlertLog(demoMode = false) {
       const resp = await axios.get(API.alertLog, {
         timeout: 5000,
       })
-      setAlerts(resp.data)
+      const data = Array.isArray(resp.data) ? resp.data : resp.data.alerts || []
+      setAlerts(data)
       setError(null)
     } catch (err) {
       // Graceful fallback — keep last known alerts

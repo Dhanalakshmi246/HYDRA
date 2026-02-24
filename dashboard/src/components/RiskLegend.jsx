@@ -11,7 +11,7 @@ export default function RiskLegend() {
   ]
 
   return (
-    <div className="absolute bottom-6 left-4 bg-navy-light/90 backdrop-blur-md border border-white/10 rounded-lg px-3 py-2 z-30">
+    <div className="absolute bottom-6 left-4 bg-navy-light/90 backdrop-blur-md border border-white/10 rounded-lg px-3 py-2 z-[1000]">
       <h4 className="font-heading text-xs font-semibold text-accent mb-1.5 tracking-wide uppercase">
         Risk Level
       </h4>

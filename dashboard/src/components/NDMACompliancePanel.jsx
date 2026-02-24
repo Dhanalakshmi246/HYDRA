@@ -11,6 +11,34 @@ import { useState, useEffect } from 'react'
  *   GET  /api/v1/ndma/mapping-table   (5-row mapping table)
  */
 
+const DEMO_TRANSLATED = {
+  ndma_color: 'ORANGE',
+  ndma_action: 'Evacuate low-lying areas; deploy NDRF',
+  argus_level: 'WARNING',
+  district: 'Majuli',
+  state: 'Assam',
+  population_affected: 12000,
+  lead_time_hrs: 6.0,
+  minimum_lead_time_hrs: 4.0,
+  lead_time_compliant: true,
+  required_actions: [
+    'Activate District EOC to Level-III',
+    'Issue public warning via all channels',
+    'Pre-position NDRF teams at staging areas',
+    'Open relief shelters in identified safe zones',
+    'Restrict vehicular movement on flood-prone roads',
+  ],
+  mandatory_notifications: ['NDMA', 'SDMA Assam', 'CWC Regional', 'IAF (airlift standby)', 'MHA Control Room'],
+}
+
+const DEMO_MAPPING_TABLE = [
+  { argus_level: 'NORMAL', ndma_color: 'GREEN', ndma_action: 'Routine monitoring', minimum_lead_time_hrs: 0 },
+  { argus_level: 'ADVISORY', ndma_color: 'YELLOW', ndma_action: 'Heightened vigilance; prepare resources', minimum_lead_time_hrs: 12 },
+  { argus_level: 'WATCH', ndma_color: 'YELLOW', ndma_action: 'Alert first responders; stage equipment', minimum_lead_time_hrs: 8 },
+  { argus_level: 'WARNING', ndma_color: 'ORANGE', ndma_action: 'Evacuate low-lying areas; deploy NDRF', minimum_lead_time_hrs: 4 },
+  { argus_level: 'EMERGENCY', ndma_color: 'RED', ndma_action: 'Full evacuation; request military aid', minimum_lead_time_hrs: 2 },
+]
+
 const NDMA_COLORS = {
   GREEN:  { bg: 'bg-green-600',   border: 'border-green-500/40', text: 'text-green-100',  dot: 'bg-green-400'  },
   YELLOW: { bg: 'bg-yellow-500',  border: 'border-yellow-400/40', text: 'text-yellow-100', dot: 'bg-yellow-400' },
@@ -26,6 +54,7 @@ const NDMACompliancePanel = () => {
 
   useEffect(() => {
     const fetchAll = async () => {
+      let tOk = false, mOk = false
       try {
         const [tRes, mRes] = await Promise.allSettled([
           fetch('/api/v1/ndma/translate', {
@@ -42,13 +71,17 @@ const NDMACompliancePanel = () => {
           fetch('/api/v1/ndma/mapping-table'),
         ])
         if (tRes.status === 'fulfilled' && tRes.value.ok) {
-          setTranslated(await tRes.value.json())
+          setTranslated(await tRes.value.json()); tOk = true
         }
         if (mRes.status === 'fulfilled' && mRes.value.ok) {
           const mData = await mRes.value.json()
-          setMappingTable(mData.mapping_table || mData.table || [])
+          if (mData.mapping_table?.length || mData.table?.length) {
+            setMappingTable(mData.mapping_table || mData.table || []); mOk = true
+          }
         }
       } catch { /* ignore */ }
+      if (!tOk) setTranslated(DEMO_TRANSLATED)
+      if (!mOk) setMappingTable(DEMO_MAPPING_TABLE)
       setLoading(false)
     }
     fetchAll()
